@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Material Intel</title>
+<script src="https://js.zohostatic.com/zohofinance/v1/ZohoEmbededAppSDK.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; color: #2d2d2d; background: #f5f6f8; padding: 16px; }
@@ -62,17 +63,6 @@
 </div>
 
 <script>
-  // ── CONFIG ──────────────────────────────────────────────
-  // Replace test values below with your actual IDs for testing
-  const PARAMS = {
-    materialType:   "1",
-    specification:  "1",
-    material:       "1",
-    formType:       "1",
-    manufacturerId: "1"
-  };
-  // ────────────────────────────────────────────────────────
-
   const cache = {};
 
   function fmt(val) {
@@ -174,43 +164,55 @@
     document.getElementById("view-industry").classList.toggle("hidden", isMyQuotes);
   }
 
-  async function fetchIntel(mode, containerId, loadingId) {
+  function fetchIntel(mode, containerId, loadingId, params) {
     if (cache[mode]) {
       renderPanel(cache[mode], containerId, loadingId);
       return;
     }
-    try {
-      const resp = await fetch(`https://creator.zoho.com/api/v2/mark_sentrymetal/type-formsheet-2-18-21/functions/getmaterialintel/execute`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          arguments: {
-            materialType:   PARAMS.materialType,
-            specification:  PARAMS.specification,
-            material:       PARAMS.material,
-            formType:       PARAMS.formType,
-            manufacturerId: PARAMS.manufacturerId,
-            mode:           mode
-          }
-        })
-      });
-      const json = await resp.json();
-      if (json && json.result) {
-        cache[mode] = json.result;
-        renderPanel(json.result, containerId, loadingId);
-      } else {
-        showError(containerId, loadingId, "No data returned: " + JSON.stringify(json));
+    ZOHO.CREATOR.API.executeFunction({
+      appName: "type-formsheet-2-18-21",
+      functionName: "getmaterialintel",
+      arguments: {
+        materialType:   params.materialType,
+        specification:  params.specification,
+        material:       params.material,
+        formType:       params.formType,
+        manufacturerId: params.manufacturerId,
+        mode:           mode
       }
-    } catch(e) {
-      showError(containerId, loadingId, "Error: " + e.message);
-    }
+    }).then(function(response) {
+      if (response && response.result) {
+        cache[mode] = response.result;
+        renderPanel(response.result, containerId, loadingId);
+      } else {
+        showError(containerId, loadingId, "No data returned: " + JSON.stringify(response));
+      }
+    }).catch(function(err) {
+      showError(containerId, loadingId, "Error: " + JSON.stringify(err));
+    });
   }
 
-  // Load My Quotes immediately, Industry loads on first toggle
-  fetchIntel("my_quotes", "content-my", "loading-my");
+  // Initialize Zoho SDK then load data
+  ZOHO.CREATOR.init().then(function() {
+    return ZOHO.CREATOR.UTIL.getQueryParams();
+  }).then(function(params) {
+    const p = {
+      materialType:   params.materialType   || "1",
+      specification:  params.specification  || "1",
+      material:       params.material       || "1",
+      formType:       params.formType       || "1",
+      manufacturerId: params.manufacturerId || "1"
+    };
 
-  document.getElementById("btn-industry").addEventListener("click", () => {
-    fetchIntel("all_quotes", "content-industry", "loading-industry");
+    // Load My Quotes immediately
+    fetchIntel("my_quotes", "content-my", "loading-my", p);
+
+    // Load Industry on toggle click
+    document.getElementById("btn-industry").addEventListener("click", function() {
+      fetchIntel("all_quotes", "content-industry", "loading-industry", p);
+    });
+  }).catch(function(err) {
+    showError("content-my", "loading-my", "SDK init error: " + JSON.stringify(err));
   });
 </script>
 </body>
