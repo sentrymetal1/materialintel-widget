@@ -223,9 +223,10 @@
   function fetchIntel(mode, containerId, loadingId, p) {
     if (cache[mode]) { renderPanel(cache[mode], containerId, loadingId); return; }
 
-    var criteria = '(Material_Type == "' + p.materialType + '" && Material_Form_Detail == "' + p.specification + '" && Material == "' + p.material + '")';
+    var mt = p.materialType, sp = p.specification, ma = p.material, cu = p.manufacturerId;
+    var criteria = "(Material_Type == " + mt + " && Material_Form_Detail == " + sp + " && Material == " + ma + ")";
     if (mode === "my_quotes") {
-      criteria = '(Material_Type == "' + p.materialType + '" && Material_Form_Detail == "' + p.specification + '" && Material == "' + p.material + '" && Customer_LU == "' + p.manufacturerId + '")';
+      criteria = "(Material_Type == " + mt + " && Material_Form_Detail == " + sp + " && Material == " + ma + " && Customer_LU == " + cu + ")";
     }
 
     var config = {
