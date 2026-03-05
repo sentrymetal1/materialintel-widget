@@ -37,7 +37,8 @@
   .badge { display: inline-block; background: #f0f0f0; color: #555; border-radius: 4px; padding: 2px 7px; font-size: 11px; }
   .total-quotes { font-size: 11px; color: #aaa; margin-top: 4px; }
   .loading { color: #aaa; font-size: 13px; padding: 24px 0; text-align: center; }
-  .error { color: #dc2626; font-size: 12px; padding: 12px; background: #fef2f2; border-radius: 6px; }
+  .error { color: #dc2626; font-size: 11px; padding: 12px; background: #fef2f2; border-radius: 6px; word-break: break-all; }
+  .debug { color: #555; font-size: 11px; padding: 8px; background: #f9fafb; border-radius: 6px; margin-top: 8px; word-break: break-all; }
   .hidden { display: none; }
 </style>
 </head>
@@ -149,11 +150,12 @@
     content.innerHTML = html;
   }
 
-  function showError(containerId, loadingId, msg) {
+  function showError(containerId, loadingId, msg, debug) {
     document.getElementById(loadingId).classList.add("hidden");
     const el = document.getElementById(containerId);
     el.classList.remove("hidden");
-    el.innerHTML = `<div class="error">${msg}</div>`;
+    el.innerHTML = `<div class="error">Error: ${msg}</div>` +
+      (debug ? `<div class="debug">Debug: ${JSON.stringify(debug)}</div>` : "");
   }
 
   function switchMode(mode) {
@@ -169,9 +171,15 @@
       renderPanel(cache[mode], containerId, loadingId);
       return;
     }
+
+    // Timeout fallback after 10 seconds
+    const timeout = setTimeout(function() {
+      showError(containerId, loadingId, "Request timed out after 10s. Check appName and functionName.", params);
+    }, 10000);
+
     ZOHO.CREATOR.API.executeFunction({
       appName: "type-formsheet-2-18-21",
-      functionName: "getmaterialintel",
+      functionName: "getMaterialIntel",
       arguments: {
         materialType:   params.materialType,
         specification:  params.specification,
@@ -181,14 +189,16 @@
         mode:           mode
       }
     }).then(function(response) {
+      clearTimeout(timeout);
       if (response && response.result) {
         cache[mode] = response.result;
         renderPanel(response.result, containerId, loadingId);
       } else {
-        showError(containerId, loadingId, "No data returned: " + JSON.stringify(response));
+        showError(containerId, loadingId, "No result in response", response);
       }
     }).catch(function(err) {
-      showError(containerId, loadingId, "Error: " + JSON.stringify(err));
+      clearTimeout(timeout);
+      showError(containerId, loadingId, "Function call failed", err);
     });
   }
 
@@ -204,15 +214,14 @@
       manufacturerId: params.manufacturerId || "1"
     };
 
-    // Load My Quotes immediately
     fetchIntel("my_quotes", "content-my", "loading-my", p);
 
-    // Load Industry on toggle click
     document.getElementById("btn-industry").addEventListener("click", function() {
       fetchIntel("all_quotes", "content-industry", "loading-industry", p);
     });
+
   }).catch(function(err) {
-    showError("content-my", "loading-my", "SDK init error: " + JSON.stringify(err));
+    showError("content-my", "loading-my", "SDK init failed", err);
   });
 </script>
 </body>
