@@ -82,6 +82,84 @@
     return `<span class="trend-badge ${cls}"><span class="trend-arrow">${arrow}</span>${label}</span>`;
   }
 
+  function processRecords(records) {
+    if (!records || records.length === 0) {
+      return {
+        total_quotes: 0,
+        last_paid: 0, min_price: 0, max_price: 0, avg_price: 0,
+        trend: "insufficient-data", recent_avg: 0, recent_count: 0,
+        supplier_summary: [], lead_time_summary: []
+      };
+    }
+
+    // Stats
+    var total = 0, min = null, max = null, lastPaid = 0;
+    var supplierTotals = {}, supplierCounts = {};
+    var leadTimeCounts = {};
+    var cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 90);
+    var recentTotal = 0, recentCount = 0;
+    var first = true;
+
+    records.forEach(function(r) {
+      var price = parseFloat(r.Price_Per_Lb) || 0;
+      var supplier = r.Supplier_Name || "Unknown";
+      var leadTime = r.Lead_Time_Drop_Down || "";
+      var quoteDate = r.Quote_Date ? new Date(r.Quote_Date) : null;
+
+      if (first) { lastPaid = price; first = false; }
+      if (min === null || price < min) min = price;
+      if (max === null || price > max) max = price;
+      total += price;
+
+      // Supplier
+      if (!supplierTotals[supplier]) { supplierTotals[supplier] = 0; supplierCounts[supplier] = 0; }
+      supplierTotals[supplier] += price;
+      supplierCounts[supplier]++;
+
+      // Lead time
+      if (leadTime && leadTime !== "null") {
+        leadTimeCounts[leadTime] = (leadTimeCounts[leadTime] || 0) + 1;
+      }
+
+      // Recent (90 days)
+      if (quoteDate && quoteDate >= cutoff) {
+        recentTotal += price;
+        recentCount++;
+      }
+    });
+
+    var avg = records.length > 0 ? total / records.length : 0;
+    var recentAvg = recentCount > 0 ? recentTotal / recentCount : 0;
+    var trend = "insufficient-data";
+    if (recentAvg > 0 && avg > 0) {
+      trend = recentAvg > avg ? "up" : recentAvg < avg ? "down" : "flat";
+    }
+
+    // Supplier summary
+    var supplierSummary = Object.keys(supplierTotals).map(function(name) {
+      return { supplier: name, avg_price: supplierTotals[name] / supplierCounts[name], quote_count: supplierCounts[name] };
+    });
+
+    // Lead time summary
+    var leadTimeSummary = Object.keys(leadTimeCounts).map(function(lt) {
+      return { lead_time: lt, count: leadTimeCounts[lt] };
+    });
+
+    return {
+      total_quotes: records.length,
+      last_paid: lastPaid,
+      min_price: min || 0,
+      max_price: max || 0,
+      avg_price: avg,
+      trend: trend,
+      recent_avg: recentAvg,
+      recent_count: recentCount,
+      supplier_summary: supplierSummary,
+      lead_time_summary: leadTimeSummary
+    };
+  }
+
   function renderPanel(data, containerId, loadingId) {
     document.getElementById(loadingId).classList.add("hidden");
     const content = document.getElementById(containerId);
@@ -90,24 +168,12 @@
     let html = `<div class="section">
       <div class="section-label">Pricing</div>
       <div class="price-grid">
-        <div class="price-box highlight">
-          <div class="label">Last Paid</div>
-          <div class="value">${fmt(data.last_paid)}</div>
-        </div>
-        <div class="price-box">
-          <div class="label">Avg Price</div>
-          <div class="value">${fmt(data.avg_price)}</div>
-        </div>
-        <div class="price-box">
-          <div class="label">Min Price</div>
-          <div class="value">${fmt(data.min_price)}</div>
-        </div>
-        <div class="price-box">
-          <div class="label">Max Price</div>
-          <div class="value">${fmt(data.max_price)}</div>
-        </div>
+        <div class="price-box highlight"><div class="label">Last Paid</div><div class="value">${fmt(data.last_paid)}</div></div>
+        <div class="price-box"><div class="label">Avg Price</div><div class="value">${fmt(data.avg_price)}</div></div>
+        <div class="price-box"><div class="label">Min Price</div><div class="value">${fmt(data.min_price)}</div></div>
+        <div class="price-box"><div class="label">Max Price</div><div class="value">${fmt(data.max_price)}</div></div>
       </div>
-      <div class="total-quotes">${data.total_quotes || 0} total quotes</div>
+      <div class="total-quotes">${data.total_quotes} total quotes</div>
     </div>`;
 
     html += `<div class="section">
@@ -117,32 +183,23 @@
     </div>`;
 
     if (data.supplier_summary && data.supplier_summary.length > 0) {
-      const maxAvg = Math.max(...data.supplier_summary.map(s => parseFloat(s.avg_price) || 0));
-      html += `<div class="section">
-        <div class="section-label">Suppliers</div>
+      const maxAvg = Math.max(...data.supplier_summary.map(s => s.avg_price));
+      html += `<div class="section"><div class="section-label">Suppliers</div>
         <table><thead><tr><th>Supplier</th><th>Avg/lb</th><th>Quotes</th></tr></thead><tbody>`;
       data.supplier_summary.forEach(s => {
-        const pct = maxAvg > 0 ? Math.round((parseFloat(s.avg_price) / maxAvg) * 100) : 0;
-        html += `<tr>
-          <td>${s.supplier}</td>
-          <td>${fmt(s.avg_price)}<span class="bar-wrap"><span class="bar-fill" style="width:${pct}%"></span></span></td>
-          <td><span class="badge">${s.quote_count}</span></td>
-        </tr>`;
+        const pct = maxAvg > 0 ? Math.round((s.avg_price / maxAvg) * 100) : 0;
+        html += `<tr><td>${s.supplier}</td><td>${fmt(s.avg_price)}<span class="bar-wrap"><span class="bar-fill" style="width:${pct}%"></span></span></td><td><span class="badge">${s.quote_count}</span></td></tr>`;
       });
       html += `</tbody></table></div>`;
     }
 
     if (data.lead_time_summary && data.lead_time_summary.length > 0) {
-      const maxLT = Math.max(...data.lead_time_summary.map(l => l.count || 0));
-      html += `<div class="section">
-        <div class="section-label">Lead Times</div>
+      const maxLT = Math.max(...data.lead_time_summary.map(l => l.count));
+      html += `<div class="section"><div class="section-label">Lead Times</div>
         <table><thead><tr><th>Lead Time</th><th>Frequency</th></tr></thead><tbody>`;
       data.lead_time_summary.forEach(l => {
         const pct = maxLT > 0 ? Math.round((l.count / maxLT) * 100) : 0;
-        html += `<tr>
-          <td>${l.lead_time}</td>
-          <td><span class="bar-wrap"><span class="bar-fill" style="width:${pct}%"></span></span> <span style="color:#aaa;font-size:11px;">${l.count}</span></td>
-        </tr>`;
+        html += `<tr><td>${l.lead_time}</td><td><span class="bar-wrap"><span class="bar-fill" style="width:${pct}%"></span></span> <span style="color:#aaa;font-size:11px;">${l.count}</span></td></tr>`;
       });
       html += `</tbody></table></div>`;
     }
@@ -166,42 +223,37 @@
     document.getElementById("view-industry").classList.toggle("hidden", isMyQuotes);
   }
 
-  function fetchIntel(mode, containerId, loadingId, params) {
-    if (cache[mode]) {
-      renderPanel(cache[mode], containerId, loadingId);
-      return;
+  function fetchIntel(mode, containerId, loadingId, p) {
+    if (cache[mode]) { renderPanel(cache[mode], containerId, loadingId); return; }
+
+    // Build criteria based on mode
+    var criteria = "(Material_Type == " + p.materialType + " && Material_Form_Detail == " + p.specification + " && Material == " + p.material + ")";
+    if (mode === "my_quotes") {
+      criteria = "(Material_Type == " + p.materialType + " && Material_Form_Detail == " + p.specification + " && Material == " + p.material + " && Customer_LU == " + p.manufacturerId + ")";
     }
 
-    const timeout = setTimeout(function() {
-      showError(containerId, loadingId, "Timed out after 10s", params);
-    }, 10000);
-
-    ZOHO.CREATOR.API.executeFunction({
+    var config = {
       appName: "type-formsheet-2-18-21",
-      functionName: "getMaterialIntel",
-      arguments: {
-        materialType:   params.materialType,
-        specification:  params.specification,
-        material:       params.material,
-        formType:       params.formType,
-        manufacturerId: params.manufacturerId,
-        mode:           mode
-      }
-    }).then(function(response) {
-      clearTimeout(timeout);
-      if (response && response.result) {
-        cache[mode] = response.result;
-        renderPanel(response.result, containerId, loadingId);
+      reportName: "RFQs_Sent",
+      criteria: criteria,
+      page: 1,
+      pageSize: 200
+    };
+
+    ZOHO.CREATOR.API.getAllRecords(config).then(function(response) {
+      if (response && response.code === 3000) {
+        var data = processRecords(response.data);
+        cache[mode] = data;
+        renderPanel(data, containerId, loadingId);
       } else {
-        showError(containerId, loadingId, "No result in response", response);
+        showError(containerId, loadingId, "Query failed", response);
       }
     }).catch(function(err) {
-      clearTimeout(timeout);
-      showError(containerId, loadingId, "Function call failed", err);
+      showError(containerId, loadingId, "getAllRecords error", err);
     });
   }
 
-  ZOHO.CREATOR.init().then(function(data) {
+  ZOHO.CREATOR.init().then(function() {
     var queryParams = ZOHO.CREATOR.UTIL.getQueryParams();
     var p = {
       materialType:   queryParams.materialType   || "1",
