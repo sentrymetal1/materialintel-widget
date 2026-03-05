@@ -66,6 +66,15 @@
 <script>
   const cache = {};
 
+  // HARDCODED TEST IDs - from first row of RFQs_Sent report
+  var TEST_PARAMS = {
+    materialType:   "4111484000000372131",
+    specification:  "4111484000000388655",
+    material:       "4111484000000371090",
+    formType:       "1",
+    manufacturerId: "4111484000000372059"
+  };
+
   function fmt(val) {
     if (!val && val !== 0) return "-";
     return "$" + parseFloat(val).toFixed(4);
@@ -92,7 +101,6 @@
       };
     }
 
-    // Stats
     var total = 0, min = null, max = null, lastPaid = 0;
     var supplierTotals = {}, supplierCounts = {};
     var leadTimeCounts = {};
@@ -112,17 +120,14 @@
       if (max === null || price > max) max = price;
       total += price;
 
-      // Supplier
       if (!supplierTotals[supplier]) { supplierTotals[supplier] = 0; supplierCounts[supplier] = 0; }
       supplierTotals[supplier] += price;
       supplierCounts[supplier]++;
 
-      // Lead time
       if (leadTime && leadTime !== "null") {
         leadTimeCounts[leadTime] = (leadTimeCounts[leadTime] || 0) + 1;
       }
 
-      // Recent (90 days)
       if (quoteDate && quoteDate >= cutoff) {
         recentTotal += price;
         recentCount++;
@@ -136,27 +141,19 @@
       trend = recentAvg > avg ? "up" : recentAvg < avg ? "down" : "flat";
     }
 
-    // Supplier summary
     var supplierSummary = Object.keys(supplierTotals).map(function(name) {
       return { supplier: name, avg_price: supplierTotals[name] / supplierCounts[name], quote_count: supplierCounts[name] };
     });
 
-    // Lead time summary
     var leadTimeSummary = Object.keys(leadTimeCounts).map(function(lt) {
       return { lead_time: lt, count: leadTimeCounts[lt] };
     });
 
     return {
       total_quotes: records.length,
-      last_paid: lastPaid,
-      min_price: min || 0,
-      max_price: max || 0,
-      avg_price: avg,
-      trend: trend,
-      recent_avg: recentAvg,
-      recent_count: recentCount,
-      supplier_summary: supplierSummary,
-      lead_time_summary: leadTimeSummary
+      last_paid: lastPaid, min_price: min || 0, max_price: max || 0, avg_price: avg,
+      trend: trend, recent_avg: recentAvg, recent_count: recentCount,
+      supplier_summary: supplierSummary, lead_time_summary: leadTimeSummary
     };
   }
 
@@ -226,7 +223,6 @@
   function fetchIntel(mode, containerId, loadingId, p) {
     if (cache[mode]) { renderPanel(cache[mode], containerId, loadingId); return; }
 
-    // Build criteria based on mode
     var criteria = "(Material_Type == " + p.materialType + " && Material_Form_Detail == " + p.specification + " && Material == " + p.material + ")";
     if (mode === "my_quotes") {
       criteria = "(Material_Type == " + p.materialType + " && Material_Form_Detail == " + p.specification + " && Material == " + p.material + " && Customer_LU == " + p.manufacturerId + ")";
@@ -240,13 +236,16 @@
       pageSize: 200
     };
 
+    // Show criteria in debug area while loading
+    document.getElementById(loadingId).textContent = "Querying... criteria: " + criteria;
+
     ZOHO.CREATOR.API.getAllRecords(config).then(function(response) {
       if (response && response.code === 3000) {
         var data = processRecords(response.data);
         cache[mode] = data;
         renderPanel(data, containerId, loadingId);
       } else {
-        showError(containerId, loadingId, "Query failed", response);
+        showError(containerId, loadingId, "Query failed code: " + (response && response.code), response);
       }
     }).catch(function(err) {
       showError(containerId, loadingId, "getAllRecords error", err);
@@ -254,19 +253,11 @@
   }
 
   ZOHO.CREATOR.init().then(function() {
-    var queryParams = ZOHO.CREATOR.UTIL.getQueryParams();
-    var p = {
-      materialType:   queryParams.materialType   || "1",
-      specification:  queryParams.specification  || "1",
-      material:       queryParams.material       || "1",
-      formType:       queryParams.formType       || "1",
-      manufacturerId: queryParams.manufacturerId || "1"
-    };
-
-    fetchIntel("my_quotes", "content-my", "loading-my", p);
+    // Using hardcoded test params for now
+    fetchIntel("my_quotes", "content-my", "loading-my", TEST_PARAMS);
 
     document.getElementById("btn-industry").addEventListener("click", function() {
-      fetchIntel("all_quotes", "content-industry", "loading-industry", p);
+      fetchIntel("all_quotes", "content-industry", "loading-industry", TEST_PARAMS);
     });
 
   }).catch(function(err) {
