@@ -1,390 +1,269 @@
-<%{
-    this_page_url = "#Page:Project_Dashboard";
-    input.project_id = ifnull(input.project_id, "");
-
-    // ─── PROJECT DATA ───
-    // Zoho Creator Pages can't fetch records directly in HTML snippets
-    // We'll use a Deluge function or page parameters to pass this data later
-    // For now, using placeholder values to get the layout working
-    projDesc = ifnull(input.description, "");
-    projDate = zoho.currentdate.toString("MMM dd, yyyy");
-    projWt = "—";
-    orderWt = "—";
-    totalMatAmt = "—";
-    totalLaborAmt = "—";
-    totalLaborHrs = "—";
-    outsourceTotal = "—";
-    markupAmt = "—";
-    projectTotal = "—";
-%>
-
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Material Intel</title>
+<script src="https://js.zohostatic.com/creator/widgets/version/1.0/widgetsdk-min.js"></script>
 <style>
-/* ─── PAGE WRAPPER ─── */
-.mc-page * { box-sizing: border-box; }
-.mc-page {
-    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    margin: 0;
-    padding: 0;
-}
-
-/* ─── HEADER ─── */
-.mc-header {
-    background: linear-gradient(135deg, #1B2A4A 0%, #2C4270 100%);
-    color: white;
-    padding: 16px 24px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-}
-.mc-header-left h1 {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 17px;
-    font-weight: 700;
-    letter-spacing: -0.3px;
-    margin: 0;
-    padding: 0;
-}
-.mc-header-left .mc-desc {
-    font-size: 12px;
-    opacity: 0.6;
-    margin-top: 3px;
-}
-.mc-header-right {
-    text-align: right;
-}
-.mc-header-right .mc-date {
-    font-size: 12px;
-    opacity: 0.65;
-}
-.mc-header-right .mc-logo {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    opacity: 0.35;
-    margin-top: 3px;
-}
-
-/* ─── TOTALS BAR ─── */
-.mc-totals {
-    display: flex;
-    gap: 1px;
-    background: #E1E4EA;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-.mc-tot {
-    background: #FFFFFF;
-    padding: 10px 0;
-    flex: 1;
-    text-align: center;
-    min-width: 0;
-}
-.mc-tot:first-child { border-radius: 10px 0 0 10px; }
-.mc-tot:last-child { border-radius: 0 10px 10px 0; }
-.mc-tot.hl { background: #EBF0FD; }
-.mc-tot-label {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 9px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    color: #9BA3B0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding: 0 6px;
-}
-.mc-tot-val {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    font-weight: 600;
-    color: #1A1D23;
-    margin-top: 2px;
-}
-.mc-tot.hl .mc-tot-val { color: #3B6FED; }
-
-/* ─── FORM EMBED ─── */
-.mc-form-wrap {
-    min-height: 100vh;
-    height: auto !important;
-    width: 100% !important;
-}
-
-/* ─── ZOHO FORM TAB OVERRIDES ─── */
-/* Actual Zoho Creator form tab classes from inspect */
-
-/* Tab container */
-.zc-Tabs-group,
-.zc-radio-field-group,
-.form-group.zc-Tabs-group {
-    background: #FFFFFF !important;
-    border: 1px solid #E1E4EA !important;
-    border-radius: 10px !important;
-    padding: 4px !important;
-    margin: 0 0 16px 0 !important;
-    display: flex !important;
-    gap: 2px !important;
-    box-shadow: none !important;
-}
-
-/* Hide the radio inputs */
-.zc-Tabs-group input[type="radio"] {
-    display: none !important;
-}
-
-/* Tab row container */
-.zc-Tabs-group .choice-table-row,
-.zc-Tabs-group .choice-table {
-    display: flex !important;
-    gap: 2px !important;
-    width: auto !important;
-    border: none !important;
-    background: transparent !important;
-}
-
-/* Individual tab cells */
-.zc-Tabs-group .choice-table-cell {
-    border: none !important;
-    padding: 0 !important;
-    background: transparent !important;
-}
-
-/* Tab labels (the clickable elements) */
-.zc-Tabs-group label,
-.zc-Tabs-group .zc-Tabs-label,
-.zc-Tabs-group .choice-label-text {
-    font-family: 'DM Sans', -apple-system, sans-serif !important;
-    font-size: 11px !important;
-    font-weight: 500 !important;
-    padding: 8px 16px !important;
-    border: none !important;
-    border-radius: 7px !important;
-    background: transparent !important;
-    color: #5F6775 !important;
-    cursor: pointer !important;
-    transition: all 0.15s ease !important;
-    display: block !important;
-    text-align: center !important;
-    white-space: nowrap !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.3px !important;
-}
-
-/* Tab hover */
-.zc-Tabs-group label:hover,
-.zc-Tabs-group .zc-Tabs-label:hover,
-.zc-Tabs-group .choice-label-text:hover {
-    background: #F4F5F7 !important;
-    color: #1A1D23 !important;
-}
-
-/* Active tab */
-.zc-Tabs-group input[type="radio"]:checked + label,
-.zc-Tabs-group input[type="radio"]:checked + .zc-Tabs-label,
-.zc-Tabs-group .zc-Tabs-ariaSelected,
-.zc-Tabs-group label.zc-Tabs-ariaLabel[aria-selected="true"],
-.zc-Tabs-group .choice-table-cell.active label,
-.zc-Tabs-group .choice-table-cell.selected label {
-    background: #3B6FED !important;
-    color: white !important;
-    font-weight: 600 !important;
-    box-shadow: 0 1px 3px rgba(59,111,237,0.3) !important;
-}
-
-/* Remove any default borders/backgrounds on the tab wrapper */
-.zc-Tabs-group .choice-table-row {
-    border: none !important;
-    border-collapse: separate !important;
-    border-spacing: 2px !important;
-}
-
-/* Remove the form-group default styling */
-.form-group.zc-Tabs-group {
-    border: 1px solid #E1E4EA !important;
-    border-radius: 10px !important;
-    padding: 4px !important;
-    margin-bottom: 16px !important;
-}
-
-/* Tab area: hide field label if present */
-.zc-Tabs-group .form-label,
-.zc-Tabs-group .zc-label {
-    display: none !important;
-}
-
-/* ─── FORM FIELD STYLING ─── */
-/* Improve input fields within the embedded form */
-.zc-formfield input[type="text"],
-.zc-formfield textarea,
-.zc-formfield select {
-    font-family: 'DM Sans', sans-serif !important;
-    font-size: 13px !important;
-    border-radius: 6px !important;
-    border: 1px solid #E1E4EA !important;
-    padding: 8px 10px !important;
-    transition: border-color 0.15s, box-shadow 0.15s !important;
-}
-
-.zc-formfield input[type="text"]:focus,
-.zc-formfield textarea:focus,
-.zc-formfield select:focus {
-    border-color: #3B6FED !important;
-    box-shadow: 0 0 0 3px rgba(59,111,237,0.1) !important;
-    outline: none !important;
-}
-
-/* Section headers within the form */
-.zc-section-header,
-.zc-subform-header,
-[class*="sectionHeader"] {
-    font-family: 'DM Sans', sans-serif !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.3px !important;
-    color: #5F6775 !important;
-    border-bottom: 2px solid #E1E4EA !important;
-    padding-bottom: 8px !important;
-    margin-top: 16px !important;
-}
-
-/* Subform table styling */
-.zc-subform-table th,
-.zc-reporttable th,
-[class*="subform"] th {
-    font-family: 'DM Sans', sans-serif !important;
-    font-size: 10px !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.4px !important;
-    color: #9BA3B0 !important;
-    background: #F4F5F7 !important;
-    border-bottom: 2px solid #E1E4EA !important;
-    padding: 8px 10px !important;
-}
-
-.zc-subform-table td,
-.zc-reporttable td,
-[class*="subform"] td {
-    font-family: 'DM Sans', sans-serif !important;
-    font-size: 12px !important;
-    padding: 8px 10px !important;
-    border-bottom: 1px solid #F0F1F4 !important;
-}
-
-/* Button styling */
-.zc-form-submit-btn,
-.zc-primarybtn,
-[class*="submitbtn"],
-button[type="submit"] {
-    font-family: 'DM Sans', sans-serif !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    padding: 10px 22px !important;
-    border-radius: 8px !important;
-    background: #3B6FED !important;
-    color: white !important;
-    border: none !important;
-    cursor: pointer !important;
-    transition: all 0.15s !important;
-}
-
-.zc-form-submit-btn:hover,
-.zc-primarybtn:hover,
-[class*="submitbtn"]:hover,
-button[type="submit"]:hover {
-    background: #2D5BD6 !important;
-    box-shadow: 0 3px 12px rgba(59,111,237,0.3) !important;
-}
-
-/* ─── RESPONSIVE ─── */
-@media only screen and (max-width: 900px) {
-    .mc-totals { flex-wrap: wrap; }
-    .mc-tot { min-width: calc(25% - 1px); }
-    .mc-header { flex-direction: column; align-items: flex-start; gap: 8px; }
-    .mc-header-right { text-align: left; }
-}
-@media only screen and (max-width: 600px) {
-    .mc-tot { min-width: calc(50% - 1px); }
-}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; color: #2d2d2d; background: #f5f6f8; padding: 16px; }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  h2 { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+  .toggle-wrap { display: flex; align-items: center; background: #f0f0f0; border-radius: 20px; padding: 3px; gap: 2px; }
+  .toggle-btn { padding: 5px 14px; border-radius: 16px; border: none; background: transparent; font-size: 12px; font-weight: 600; color: #888; cursor: pointer; transition: all 0.15s; }
+  .toggle-btn.active { background: #fff; color: #2563eb; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+  .panel { background: #fff; border-radius: 8px; border: 1px solid #e4e7ec; padding: 16px; }
+  .section { margin-bottom: 16px; }
+  .section:last-child { margin-bottom: 0; }
+  .section-label { font-size: 11px; color: #888; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .price-box { background: #f9fafb; border-radius: 6px; padding: 10px 12px; }
+  .price-box .label { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.04em; }
+  .price-box .value { font-size: 18px; font-weight: 600; color: #1a1a1a; margin-top: 2px; }
+  .price-box.highlight .value { color: #2563eb; }
+  .trend-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+  .trend-up { background: #fef2f2; color: #dc2626; }
+  .trend-down { background: #f0fdf4; color: #16a34a; }
+  .trend-flat { background: #f0f9ff; color: #0284c7; }
+  .trend-insufficient { background: #f9fafb; color: #9ca3af; }
+  .trend-arrow { font-size: 16px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #999; font-weight: 600; padding: 4px 8px 6px 0; border-bottom: 1px solid #f0f0f0; text-align: left; }
+  td { padding: 6px 8px 6px 0; border-bottom: 1px solid #f9f9f9; font-size: 12px; color: #2d2d2d; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  .bar-wrap { background: #f0f0f0; border-radius: 4px; height: 6px; width: 80px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 6px; }
+  .bar-fill { height: 100%; border-radius: 4px; background: #2563eb; }
+  .badge { display: inline-block; background: #f0f0f0; color: #555; border-radius: 4px; padding: 2px 7px; font-size: 11px; }
+  .total-quotes { font-size: 11px; color: #aaa; margin-top: 4px; }
+  .loading { color: #aaa; font-size: 13px; padding: 24px 0; text-align: center; }
+  .error { color: #dc2626; font-size: 11px; padding: 12px; background: #fef2f2; border-radius: 6px; word-break: break-all; }
+  .debug { color: #555; font-size: 11px; padding: 8px; background: #f9fafb; border-radius: 6px; margin-top: 8px; word-break: break-all; }
+  .hidden { display: none; }
 </style>
+</head>
+<body>
 
-<div class="mc-page">
-
-<!-- ─── HEADER ─── -->
-<div class="mc-header">
-    <div class="mc-header-left">
-        <h1>QUOTE PROJECT (RFQ from Client)</h1>
-        <div class="mc-desc"><%=projDesc%></div>
-    </div>
-    <div class="mc-header-right">
-        <div class="mc-date"><%=projDate%></div>
-        <div class="mc-logo">Material Compass</div>
-    </div>
+<div class="header">
+  <h2>Material Intelligence</h2>
+  <div class="toggle-wrap">
+    <button class="toggle-btn active" id="btn-my" onclick="switchMode('my_quotes')">My Quotes</button>
+    <button class="toggle-btn" id="btn-industry" onclick="switchMode('all_quotes')">Industry</button>
+  </div>
 </div>
 
-<!-- ─── PROJECT TOTALS ─── -->
-<div class="mc-totals">
-    <div class="mc-tot">
-        <div class="mc-tot-label">Project Wt</div>
-        <div class="mc-tot-val"><%=projWt%></div>
-    </div>
-    <div class="mc-tot">
-        <div class="mc-tot-label">Order Wt</div>
-        <div class="mc-tot-val"><%=orderWt%></div>
-    </div>
-    <div class="mc-tot">
-        <div class="mc-tot-label">Total Mat Amt</div>
-        <div class="mc-tot-val">$<%=totalMatAmt%></div>
-    </div>
-    <div class="mc-tot">
-        <div class="mc-tot-label">Total Labor Amt</div>
-        <div class="mc-tot-val">$<%=totalLaborAmt%></div>
-    </div>
-    <div class="mc-tot">
-        <div class="mc-tot-label">Labor Hrs</div>
-        <div class="mc-tot-val"><%=totalLaborHrs%></div>
-    </div>
-    <div class="mc-tot">
-        <div class="mc-tot-label">Outsource</div>
-        <div class="mc-tot-val">$<%=outsourceTotal%></div>
-    </div>
-    <div class="mc-tot">
-        <div class="mc-tot-label">Mark Up</div>
-        <div class="mc-tot-val">$<%=markupAmt%></div>
-    </div>
-    <div class="mc-tot hl">
-        <div class="mc-tot-label">Project Total</div>
-        <div class="mc-tot-val">$<%=projectTotal%></div>
-    </div>
+<div class="panel">
+  <div id="view-my">
+    <div class="loading" id="loading-my">Loading...</div>
+    <div id="content-my" class="hidden"></div>
+  </div>
+  <div id="view-industry" class="hidden">
+    <div class="loading" id="loading-industry">Loading...</div>
+    <div id="content-industry" class="hidden"></div>
+  </div>
 </div>
-
-<!-- ─── FORM EMBED ─── -->
-<div class='mc-form-wrap' elName='zc-component' 
-    formLinkName='MCP_Customer_Project_Form?recLinkID=<%=input.project_id%>&viewLinkName=All_Mcp_customer_Projects&Page_Name=Project_Dashboard&ID=<%=input.project_id%>&MFG_Client_Form=<%=input.client_id%>' 
-    params='zc_Header=false&zc_Footer=false&zc_InpClr=rgb(255,255,255)&zc_InpFieldFontClr=rgb(0,0,0)&zc_InpFieldFontSize=12px'
-    style='min-height:100vh; height:auto; width:100%'>
-    Loading View...
-</div>
-
-</div><!-- /mc-page -->
 
 <script>
-// Auto-resize form embed
-window.addEventListener("message", function(e) {
-    if (e.data && e.data.height) {
-        var el = document.querySelector('.mc-form-wrap');
-        if (el) el.style.height = (parseInt(e.data.height) + 50) + "px";
-    }
-});
-</script>
+  const cache = {};
 
-<%}%>
+  // HARDCODED TEST IDs - from first row of RFQs_Sent report
+  var TEST_PARAMS = {
+    materialType:   "4111484000000388655",
+    specification:  "4111484000000391099",
+    material:       "4111484000004208019",
+    formType:       "4111484000000372131",
+    manufacturerId: "4111484000001622005"
+  };
+
+  function fmt(val) {
+    if (!val && val !== 0) return "-";
+    return "$" + parseFloat(val).toFixed(4);
+  }
+
+  function trendBadge(trend) {
+    const map = {
+      "up":                ["trend-up",          "▲", "Trending Up"],
+      "down":              ["trend-down",         "▼", "Trending Down"],
+      "flat":              ["trend-flat",         "→", "Stable"],
+      "insufficient-data": ["trend-insufficient", "-", "Insufficient Data"]
+    };
+    const [cls, arrow, label] = map[trend] || map["insufficient-data"];
+    return `<span class="trend-badge ${cls}"><span class="trend-arrow">${arrow}</span>${label}</span>`;
+  }
+
+  function processRecords(records) {
+    if (!records || records.length === 0) {
+      return {
+        total_quotes: 0,
+        last_paid: 0, min_price: 0, max_price: 0, avg_price: 0,
+        trend: "insufficient-data", recent_avg: 0, recent_count: 0,
+        supplier_summary: [], lead_time_summary: []
+      };
+    }
+
+    var total = 0, min = null, max = null, lastPaid = 0;
+    var supplierTotals = {}, supplierCounts = {};
+    var leadTimeCounts = {};
+    var cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 90);
+    var recentTotal = 0, recentCount = 0;
+    var first = true;
+
+    records.forEach(function(r) {
+      var price = parseFloat(r.Price_Per_Lb) || 0;
+      var supplier = r.Supplier_Name || "Unknown";
+      var leadTime = r.Lead_Time_Drop_Down || "";
+      var quoteDate = r.Quote_Date ? new Date(r.Quote_Date) : null;
+
+      if (first) { lastPaid = price; first = false; }
+      if (min === null || price < min) min = price;
+      if (max === null || price > max) max = price;
+      total += price;
+
+      if (!supplierTotals[supplier]) { supplierTotals[supplier] = 0; supplierCounts[supplier] = 0; }
+      supplierTotals[supplier] += price;
+      supplierCounts[supplier]++;
+
+      if (leadTime && leadTime !== "null") {
+        leadTimeCounts[leadTime] = (leadTimeCounts[leadTime] || 0) + 1;
+      }
+
+      if (quoteDate && quoteDate >= cutoff) {
+        recentTotal += price;
+        recentCount++;
+      }
+    });
+
+    var avg = records.length > 0 ? total / records.length : 0;
+    var recentAvg = recentCount > 0 ? recentTotal / recentCount : 0;
+    var trend = "insufficient-data";
+    if (recentAvg > 0 && avg > 0) {
+      trend = recentAvg > avg ? "up" : recentAvg < avg ? "down" : "flat";
+    }
+
+    var supplierSummary = Object.keys(supplierTotals).map(function(name) {
+      return { supplier: name, avg_price: supplierTotals[name] / supplierCounts[name], quote_count: supplierCounts[name] };
+    });
+
+    var leadTimeSummary = Object.keys(leadTimeCounts).map(function(lt) {
+      return { lead_time: lt, count: leadTimeCounts[lt] };
+    });
+
+    return {
+      total_quotes: records.length,
+      last_paid: lastPaid, min_price: min || 0, max_price: max || 0, avg_price: avg,
+      trend: trend, recent_avg: recentAvg, recent_count: recentCount,
+      supplier_summary: supplierSummary, lead_time_summary: leadTimeSummary
+    };
+  }
+
+  function renderPanel(data, containerId, loadingId) {
+    document.getElementById(loadingId).classList.add("hidden");
+    const content = document.getElementById(containerId);
+    content.classList.remove("hidden");
+
+    let html = `<div class="section">
+      <div class="section-label">Pricing</div>
+      <div class="price-grid">
+        <div class="price-box highlight"><div class="label">Last Paid</div><div class="value">${fmt(data.last_paid)}</div></div>
+        <div class="price-box"><div class="label">Avg Price</div><div class="value">${fmt(data.avg_price)}</div></div>
+        <div class="price-box"><div class="label">Min Price</div><div class="value">${fmt(data.min_price)}</div></div>
+        <div class="price-box"><div class="label">Max Price</div><div class="value">${fmt(data.max_price)}</div></div>
+      </div>
+      <div class="total-quotes">${data.total_quotes} total quotes</div>
+    </div>`;
+
+    html += `<div class="section">
+      <div class="section-label">90-Day Trend</div>
+      ${trendBadge(data.trend)}
+      ${data.recent_count > 0 ? `<span style="font-size:11px;color:#aaa;margin-left:8px;">${data.recent_count} recent quotes · avg ${fmt(data.recent_avg)}</span>` : ""}
+    </div>`;
+
+    if (data.supplier_summary && data.supplier_summary.length > 0) {
+      const maxAvg = Math.max(...data.supplier_summary.map(s => s.avg_price));
+      html += `<div class="section"><div class="section-label">Suppliers</div>
+        <table><thead><tr><th>Supplier</th><th>Avg/lb</th><th>Quotes</th></tr></thead><tbody>`;
+      data.supplier_summary.forEach(s => {
+        const pct = maxAvg > 0 ? Math.round((s.avg_price / maxAvg) * 100) : 0;
+        html += `<tr><td>${s.supplier}</td><td>${fmt(s.avg_price)}<span class="bar-wrap"><span class="bar-fill" style="width:${pct}%"></span></span></td><td><span class="badge">${s.quote_count}</span></td></tr>`;
+      });
+      html += `</tbody></table></div>`;
+    }
+
+    if (data.lead_time_summary && data.lead_time_summary.length > 0) {
+      const maxLT = Math.max(...data.lead_time_summary.map(l => l.count));
+      html += `<div class="section"><div class="section-label">Lead Times</div>
+        <table><thead><tr><th>Lead Time</th><th>Frequency</th></tr></thead><tbody>`;
+      data.lead_time_summary.forEach(l => {
+        const pct = maxLT > 0 ? Math.round((l.count / maxLT) * 100) : 0;
+        html += `<tr><td>${l.lead_time}</td><td><span class="bar-wrap"><span class="bar-fill" style="width:${pct}%"></span></span> <span style="color:#aaa;font-size:11px;">${l.count}</span></td></tr>`;
+      });
+      html += `</tbody></table></div>`;
+    }
+
+    content.innerHTML = html;
+  }
+
+  function showError(containerId, loadingId, msg, debug) {
+    document.getElementById(loadingId).classList.add("hidden");
+    const el = document.getElementById(containerId);
+    el.classList.remove("hidden");
+    el.innerHTML = `<div class="error">Error: ${msg}</div>` +
+      (debug ? `<div class="debug">Debug: ${JSON.stringify(debug)}</div>` : "");
+  }
+
+  function switchMode(mode) {
+    const isMyQuotes = mode === "my_quotes";
+    document.getElementById("btn-my").classList.toggle("active", isMyQuotes);
+    document.getElementById("btn-industry").classList.toggle("active", !isMyQuotes);
+    document.getElementById("view-my").classList.toggle("hidden", !isMyQuotes);
+    document.getElementById("view-industry").classList.toggle("hidden", isMyQuotes);
+  }
+
+  function fetchIntel(mode, containerId, loadingId, p) {
+    if (cache[mode]) { renderPanel(cache[mode], containerId, loadingId); return; }
+
+    var mt = p.materialType, sp = p.specification, ma = p.material, cu = p.manufacturerId;
+    var criteria = "(Material_Type == " + mt + " && Material_Form_Detail == " + sp + " && Material == " + ma + ")";
+    if (mode === "my_quotes") {
+      criteria = "(Material_Type == " + mt + " && Material_Form_Detail == " + sp + " && Material == " + ma + " && Customer_LU == " + cu + ")";
+    }
+
+    var config = {
+      appName: "type-formsheet-2-18-21",
+      reportName: "Material_Intelligence_Structural_RFQ_Sent",
+      criteria: criteria,
+      page: 1,
+      pageSize: 200
+    };
+
+    // Show criteria in debug area while loading
+    document.getElementById(loadingId).textContent = "Querying... criteria: " + criteria;
+
+    ZOHO.CREATOR.API.getAllRecords(config).then(function(response) {
+      if (response && response.code === 3000) {
+        var data = processRecords(response.data);
+        cache[mode] = data;
+        renderPanel(data, containerId, loadingId);
+      } else {
+        showError(containerId, loadingId, "Query failed code: " + (response && response.code), response);
+      }
+    }).catch(function(err) {
+      showError(containerId, loadingId, "getAllRecords error", err);
+    });
+  }
+
+  ZOHO.CREATOR.init().then(function() {
+    // Using hardcoded test params for now
+    fetchIntel("my_quotes", "content-my", "loading-my", TEST_PARAMS);
+
+    document.getElementById("btn-industry").addEventListener("click", function() {
+      fetchIntel("all_quotes", "content-industry", "loading-industry", TEST_PARAMS);
+    });
+
+  }).catch(function(err) {
+    showError("content-my", "loading-my", "SDK init failed", err);
+  });
+</script>
+</body>
+</html>
