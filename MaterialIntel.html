@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Material Intel</title>
-<script src="https://static.zohocdn.com/creator/widgets/v1/widgetsdk.js"></script>
+<script src="https://js.zohostatic.com/creator/widgets/version/1.0/widgetsdk-min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; color: #2d2d2d; background: #f5f6f8; padding: 16px; }
@@ -173,7 +173,7 @@
     }
 
     const timeout = setTimeout(function() {
-      showError(containerId, loadingId, "Timed out. SDK may not be initializing correctly.", params);
+      showError(containerId, loadingId, "Timed out after 10s", params);
     }, 10000);
 
     ZOHO.CREATOR.API.executeFunction({
@@ -201,14 +201,14 @@
     });
   }
 
-  // Initialize with correct Zoho Creator Widget SDK
   ZOHO.CREATOR.init().then(function(data) {
+    var queryParams = ZOHO.CREATOR.UTIL.getQueryParams();
     var p = {
-      materialType:   (data && data.materialType)   || "1",
-      specification:  (data && data.specification)  || "1",
-      material:       (data && data.material)       || "1",
-      formType:       (data && data.formType)       || "1",
-      manufacturerId: (data && data.manufacturerId) || "1"
+      materialType:   queryParams.materialType   || "1",
+      specification:  queryParams.specification  || "1",
+      material:       queryParams.material       || "1",
+      formType:       queryParams.formType       || "1",
+      manufacturerId: queryParams.manufacturerId || "1"
     };
 
     fetchIntel("my_quotes", "content-my", "loading-my", p);
