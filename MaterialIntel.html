@@ -254,11 +254,35 @@
   }
 
   ZOHO.CREATOR.init().then(function() {
-    // Using hardcoded test params for now
-    fetchIntel("my_quotes", "content-my", "loading-my", TEST_PARAMS);
+    var queryParams = ZOHO.CREATOR.UTIL.getQueryParams();
+    var p = TEST_PARAMS; // fallback to hardcoded
+
+    // Try to read Intel_Trigger param and parse JSON
+    if (queryParams && queryParams.Intel_Trigger) {
+      try {
+        var trigger = JSON.parse(queryParams.Intel_Trigger);
+        if (trigger.materialType) {
+          p = {
+            materialType:   trigger.materialType,
+            specification:  trigger.specification,
+            material:       trigger.material,
+            formType:       trigger.formType,
+            manufacturerId: queryParams.manufacturerId || TEST_PARAMS.manufacturerId
+          };
+          // Update header with material name if available
+          if (trigger.materialName) {
+            document.querySelector("h2").textContent = trigger.materialName;
+          }
+        }
+      } catch(e) {
+        // JSON parse failed, use fallback
+      }
+    }
+
+    fetchIntel("my_quotes", "content-my", "loading-my", p);
 
     document.getElementById("btn-industry").addEventListener("click", function() {
-      fetchIntel("all_quotes", "content-industry", "loading-industry", TEST_PARAMS);
+      fetchIntel("all_quotes", "content-industry", "loading-industry", p);
     });
 
   }).catch(function(err) {
