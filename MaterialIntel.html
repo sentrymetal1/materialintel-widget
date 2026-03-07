@@ -253,32 +253,39 @@
     });
   }
 
-  ZOHO.CREATOR.init().then(function() {
-    var queryParams = ZOHO.CREATOR.UTIL.getQueryParams();
-    var p = TEST_PARAMS; // fallback to hardcoded
-
-    // Try to read Intel_Trigger param and parse JSON
-    if (queryParams && queryParams.Intel_Trigger) {
-      try {
-        var trigger = JSON.parse(queryParams.Intel_Trigger);
-        if (trigger.materialType) {
-          p = {
-            materialType:   trigger.materialType,
-            specification:  trigger.specification,
-            material:       trigger.material,
-            formType:       trigger.formType,
-            manufacturerId: queryParams.manufacturerId || TEST_PARAMS.manufacturerId
-          };
-          // Update header with material name if available
-          if (trigger.materialName) {
-            document.querySelector("h2").textContent = trigger.materialName;
-          }
-        }
-      } catch(e) {
-        // JSON parse failed, use fallback
+  // Listen for postMessage from Zoho form (Intel checkbox trigger)
+  window.addEventListener("message", function(event) {
+    if (event.data && event.data.type === "materialSelected") {
+      var trigger = event.data;
+      var p = {
+        materialType:   trigger.materialType,
+        specification:  trigger.specification,
+        material:       trigger.material,
+        formType:       trigger.formType,
+        manufacturerId: trigger.manufacturerId || TEST_PARAMS.manufacturerId
+      };
+      // Update header with material name
+      if (trigger.materialName) {
+        document.querySelector("h2").textContent = trigger.materialName;
       }
+      // Clear cache and reload
+      cache["my_quotes"] = null;
+      cache["all_quotes"] = null;
+      // Reset to My Quotes tab
+      switchMode("my_quotes");
+      fetchIntel("my_quotes", "content-my", "loading-my", p);
+      // Re-attach industry listener with new params
+      var industryBtn = document.getElementById("btn-industry");
+      industryBtn.replaceWith(industryBtn.cloneNode(true));
+      document.getElementById("btn-industry").addEventListener("click", function() {
+        fetchIntel("all_quotes", "content-industry", "loading-industry", p);
+      });
     }
+  });
 
+  ZOHO.CREATOR.init().then(function() {
+    // Load with hardcoded test params initially
+    var p = TEST_PARAMS;
     fetchIntel("my_quotes", "content-my", "loading-my", p);
 
     document.getElementById("btn-industry").addEventListener("click", function() {
