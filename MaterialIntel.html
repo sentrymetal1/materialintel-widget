@@ -28,6 +28,7 @@
   .trend-flat { background: #f0f9ff; color: #0284c7; }
   .trend-insufficient { background: #f9fafb; color: #9ca3af; }
   .trend-arrow { font-size: 16px; }
+  .material-label { font-size: 12px; color: #555; background: #f0f4ff; border-radius: 6px; padding: 6px 10px; margin-bottom: 12px; font-weight: 500; }
   table { width: 100%; border-collapse: collapse; }
   th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #999; font-weight: 600; padding: 4px 8px 6px 0; border-bottom: 1px solid #f0f0f0; text-align: left; }
   td { padding: 6px 8px 6px 0; border-bottom: 1px solid #f9f9f9; font-size: 12px; color: #2d2d2d; vertical-align: middle; }
@@ -40,6 +41,9 @@
   .error { color: #dc2626; font-size: 11px; padding: 12px; background: #fef2f2; border-radius: 6px; word-break: break-all; }
   .debug { color: #555; font-size: 11px; padding: 8px; background: #f9fafb; border-radius: 6px; margin-top: 8px; word-break: break-all; }
   .hidden { display: none; }
+  .waiting { text-align: center; padding: 40px 20px; color: #aaa; }
+  .waiting-icon { font-size: 32px; margin-bottom: 10px; opacity: 0.4; }
+  .waiting-text { font-size: 12px; letter-spacing: 0.5px; line-height: 1.6; }
 </style>
 </head>
 <body>
@@ -52,6 +56,8 @@
   </div>
 </div>
 
+<div id="material-label-bar" class="material-label hidden"></div>
+
 <div class="panel">
   <div id="view-my">
     <div class="loading" id="loading-my">Loading...</div>
@@ -61,12 +67,16 @@
     <div class="loading" id="loading-industry">Loading...</div>
     <div id="content-industry" class="hidden"></div>
   </div>
+  <div id="view-waiting" class="waiting hidden">
+    <div class="waiting-icon">⬡</div>
+    <div class="waiting-text">Select a material row<br>to view pricing intelligence</div>
+  </div>
 </div>
 
 <script>
-  const cache = {};
+  var cache = {};
 
-  // HARDCODED TEST IDs - from first row of RFQs_Sent report
+  // Fallback hardcoded test IDs
   var TEST_PARAMS = {
     materialType:   "4111484000000388655",
     specification:  "4111484000000391099",
@@ -75,20 +85,22 @@
     manufacturerId: "4111484000001622005"
   };
 
+  var ACTIVE_PARAMS = null;
+
   function fmt(val) {
     if (!val && val !== 0) return "-";
     return "$" + parseFloat(val).toFixed(4);
   }
 
   function trendBadge(trend) {
-    const map = {
+    var map = {
       "up":                ["trend-up",          "▲", "Trending Up"],
       "down":              ["trend-down",         "▼", "Trending Down"],
       "flat":              ["trend-flat",         "→", "Stable"],
       "insufficient-data": ["trend-insufficient", "-", "Insufficient Data"]
     };
-    const [cls, arrow, label] = map[trend] || map["insufficient-data"];
-    return `<span class="trend-badge ${cls}"><span class="trend-arrow">${arrow}</span>${label}</span>`;
+    var arr = map[trend] || map["insufficient-data"];
+    return '<span class="trend-badge ' + arr[0] + '"><span class="trend-arrow">' + arr[1] + '</span>' + arr[2] + '</span>';
   }
 
   function processRecords(records) {
@@ -159,46 +171,50 @@
 
   function renderPanel(data, containerId, loadingId) {
     document.getElementById(loadingId).classList.add("hidden");
-    const content = document.getElementById(containerId);
+    var content = document.getElementById(containerId);
     content.classList.remove("hidden");
 
-    let html = `<div class="section">
-      <div class="section-label">Pricing</div>
-      <div class="price-grid">
-        <div class="price-box highlight"><div class="label">Last Paid</div><div class="value">${fmt(data.last_paid)}</div></div>
-        <div class="price-box"><div class="label">Avg Price</div><div class="value">${fmt(data.avg_price)}</div></div>
-        <div class="price-box"><div class="label">Min Price</div><div class="value">${fmt(data.min_price)}</div></div>
-        <div class="price-box"><div class="label">Max Price</div><div class="value">${fmt(data.max_price)}</div></div>
-      </div>
-      <div class="total-quotes">${data.total_quotes} total quotes</div>
-    </div>`;
+    var html = '<div class="section">'
+      + '<div class="section-label">Pricing</div>'
+      + '<div class="price-grid">'
+      + '<div class="price-box highlight"><div class="label">Last Paid</div><div class="value">' + fmt(data.last_paid) + '</div></div>'
+      + '<div class="price-box"><div class="label">Avg Price</div><div class="value">' + fmt(data.avg_price) + '</div></div>'
+      + '<div class="price-box"><div class="label">Min Price</div><div class="value">' + fmt(data.min_price) + '</div></div>'
+      + '<div class="price-box"><div class="label">Max Price</div><div class="value">' + fmt(data.max_price) + '</div></div>'
+      + '</div>'
+      + '<div class="total-quotes">' + data.total_quotes + ' total quotes</div>'
+      + '</div>';
 
-    html += `<div class="section">
-      <div class="section-label">90-Day Trend</div>
-      ${trendBadge(data.trend)}
-      ${data.recent_count > 0 ? `<span style="font-size:11px;color:#aaa;margin-left:8px;">${data.recent_count} recent quotes · avg ${fmt(data.recent_avg)}</span>` : ""}
-    </div>`;
+    html += '<div class="section">'
+      + '<div class="section-label">90-Day Trend</div>'
+      + trendBadge(data.trend)
+      + (data.recent_count > 0 ? '<span style="font-size:11px;color:#aaa;margin-left:8px;">' + data.recent_count + ' recent quotes · avg ' + fmt(data.recent_avg) + '</span>' : '')
+      + '</div>';
 
     if (data.supplier_summary && data.supplier_summary.length > 0) {
-      const maxAvg = Math.max(...data.supplier_summary.map(s => s.avg_price));
-      html += `<div class="section"><div class="section-label">Suppliers</div>
-        <table><thead><tr><th>Supplier</th><th>Avg/lb</th><th>Quotes</th></tr></thead><tbody>`;
-      data.supplier_summary.forEach(s => {
-        const pct = maxAvg > 0 ? Math.round((s.avg_price / maxAvg) * 100) : 0;
-        html += `<tr><td>${s.supplier}</td><td>${fmt(s.avg_price)}<span class="bar-wrap"><span class="bar-fill" style="width:${pct}%"></span></span></td><td><span class="badge">${s.quote_count}</span></td></tr>`;
+      var maxAvg = Math.max.apply(null, data.supplier_summary.map(function(s) { return s.avg_price; }));
+      html += '<div class="section"><div class="section-label">Suppliers</div>'
+        + '<table><thead><tr><th>Supplier</th><th>Avg/lb</th><th>Quotes</th></tr></thead><tbody>';
+      data.supplier_summary.forEach(function(s) {
+        var pct = maxAvg > 0 ? Math.round((s.avg_price / maxAvg) * 100) : 0;
+        html += '<tr><td>' + s.supplier + '</td><td>' + fmt(s.avg_price)
+          + '<span class="bar-wrap"><span class="bar-fill" style="width:' + pct + '%"></span></span></td>'
+          + '<td><span class="badge">' + s.quote_count + '</span></td></tr>';
       });
-      html += `</tbody></table></div>`;
+      html += '</tbody></table></div>';
     }
 
     if (data.lead_time_summary && data.lead_time_summary.length > 0) {
-      const maxLT = Math.max(...data.lead_time_summary.map(l => l.count));
-      html += `<div class="section"><div class="section-label">Lead Times</div>
-        <table><thead><tr><th>Lead Time</th><th>Frequency</th></tr></thead><tbody>`;
-      data.lead_time_summary.forEach(l => {
-        const pct = maxLT > 0 ? Math.round((l.count / maxLT) * 100) : 0;
-        html += `<tr><td>${l.lead_time}</td><td><span class="bar-wrap"><span class="bar-fill" style="width:${pct}%"></span></span> <span style="color:#aaa;font-size:11px;">${l.count}</span></td></tr>`;
+      var maxLT = Math.max.apply(null, data.lead_time_summary.map(function(l) { return l.count; }));
+      html += '<div class="section"><div class="section-label">Lead Times</div>'
+        + '<table><thead><tr><th>Lead Time</th><th>Frequency</th></tr></thead><tbody>';
+      data.lead_time_summary.forEach(function(l) {
+        var pct = maxLT > 0 ? Math.round((l.count / maxLT) * 100) : 0;
+        html += '<tr><td>' + l.lead_time + '</td><td>'
+          + '<span class="bar-wrap"><span class="bar-fill" style="width:' + pct + '%"></span></span>'
+          + ' <span style="color:#aaa;font-size:11px;">' + l.count + '</span></td></tr>';
       });
-      html += `</tbody></table></div>`;
+      html += '</tbody></table></div>';
     }
 
     content.innerHTML = html;
@@ -206,14 +222,14 @@
 
   function showError(containerId, loadingId, msg, debug) {
     document.getElementById(loadingId).classList.add("hidden");
-    const el = document.getElementById(containerId);
+    var el = document.getElementById(containerId);
     el.classList.remove("hidden");
-    el.innerHTML = `<div class="error">Error: ${msg}</div>` +
-      (debug ? `<div class="debug">Debug: ${JSON.stringify(debug)}</div>` : "");
+    el.innerHTML = '<div class="error">Error: ' + msg + '</div>'
+      + (debug ? '<div class="debug">Debug: ' + JSON.stringify(debug) + '</div>' : "");
   }
 
   function switchMode(mode) {
-    const isMyQuotes = mode === "my_quotes";
+    var isMyQuotes = mode === "my_quotes";
     document.getElementById("btn-my").classList.toggle("active", isMyQuotes);
     document.getElementById("btn-industry").classList.toggle("active", !isMyQuotes);
     document.getElementById("view-my").classList.toggle("hidden", !isMyQuotes);
@@ -225,7 +241,7 @@
 
     var mt = p.materialType, sp = p.specification, ma = p.material, cu = p.manufacturerId;
     var criteria = "(Material_Type == " + mt + " && Material_Form_Detail == " + sp + " && Material == " + ma + ")";
-    if (mode === "my_quotes") {
+    if (mode === "my_quotes" && cu) {
       criteria = "(Material_Type == " + mt + " && Material_Form_Detail == " + sp + " && Material == " + ma + " && Customer_LU == " + cu + ")";
     }
 
@@ -237,8 +253,7 @@
       pageSize: 200
     };
 
-    // Show criteria in debug area while loading
-    document.getElementById(loadingId).textContent = "Querying... criteria: " + criteria;
+    document.getElementById(loadingId).textContent = "Loading...";
 
     ZOHO.CREATOR.API.getAllRecords(config).then(function(response) {
       if (response && response.code === 3000) {
@@ -253,16 +268,70 @@
     });
   }
 
-  ZOHO.CREATOR.init().then(function() {
-    // Using hardcoded test params for now
-    fetchIntel("my_quotes", "content-my", "loading-my", TEST_PARAMS);
+  function loadWithParams(p) {
+    ACTIVE_PARAMS = p;
+    // Clear cache for new material
+    cache = {};
+    // Reset views
+    document.getElementById('content-my').classList.add('hidden');
+    document.getElementById('content-industry').classList.add('hidden');
+    document.getElementById('loading-my').classList.remove('hidden');
+    document.getElementById('loading-my').textContent = 'Loading...';
+    document.getElementById('view-waiting').classList.add('hidden');
+    // Show material label
+    var labelBar = document.getElementById('material-label-bar');
+    if (p.materialName) {
+      labelBar.textContent = '⬡ ' + p.materialName;
+      labelBar.classList.remove('hidden');
+    }
+    // Switch to My Quotes tab
+    switchMode('my_quotes');
+    fetchIntel('my_quotes', 'content-my', 'loading-my', ACTIVE_PARAMS);
 
-    document.getElementById("btn-industry").addEventListener("click", function() {
-      fetchIntel("all_quotes", "content-industry", "loading-industry", TEST_PARAMS);
+    // Re-wire industry button with new params
+    document.getElementById('btn-industry').onclick = function() {
+      switchMode('all_quotes');
+      fetchIntel('all_quotes', 'content-industry', 'loading-industry', ACTIVE_PARAMS);
+    };
+  }
+
+  ZOHO.CREATOR.init().then(function() {
+
+    // Check for URL params first
+    var urlParams = new URLSearchParams(window.location.search);
+    var mt = urlParams.get('materialType');
+
+    if (mt) {
+      // Params passed via URL
+      loadWithParams({
+        materialType:   urlParams.get('materialType')   || '',
+        specification:  urlParams.get('specification')  || '',
+        material:       urlParams.get('material')       || '',
+        formType:       urlParams.get('formType')       || '',
+        manufacturerId: urlParams.get('manufacturerId') || '',
+        materialName:   urlParams.get('materialName')   || ''
+      });
+    } else {
+      // No params yet — load with test params and show waiting state
+      loadWithParams(TEST_PARAMS);
+    }
+
+    // Listen for postMessage from parent page when Decision Box is checked
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'materialSelected') {
+        loadWithParams({
+          materialType:   e.data.materialType   || '',
+          specification:  e.data.specification  || '',
+          material:       e.data.material       || '',
+          formType:       e.data.formType       || '',
+          manufacturerId: e.data.manufacturerId || '',
+          materialName:   e.data.materialName   || ''
+        });
+      }
     });
 
   }).catch(function(err) {
-    showError("content-my", "loading-my", "SDK init failed", err);
+    showError('content-my', 'loading-my', 'SDK init failed', err);
   });
 </script>
 </body>
