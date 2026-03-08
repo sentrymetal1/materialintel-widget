@@ -34,10 +34,16 @@ body { font-family: 'DM Sans', sans-serif; background: transparent; overflow: hi
 .mi-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #9BA3B0; margin-bottom: 8px; }
 .mi-price-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
 .mi-price-box { background: #f9fafb; border-radius: 8px; padding: 10px 12px; border: 1px solid #f0f0f0; }
-.mi-price-box.hl { background: #f4f4f4; border-color: #d0d0d0; }
+.mi-price-box.hl  { background: #eff6ff; border-color: #bfdbfe; }
+.mi-price-box.grn { background: #f0fdf4; border-color: #bbf7d0; }
+.mi-price-box.red { background: #fef2f2; border-color: #fecaca; }
+.mi-price-box.amb { background: #fffbeb; border-color: #fde68a; }
 .mi-price-box .lbl { font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
 .mi-price-box .val { font-size: 18px; font-weight: 700; color: #1a1a1a; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
-.mi-price-box.hl .val { color: #3a3a3a; }
+.mi-price-box.hl  .val { color: #2563eb; }
+.mi-price-box.grn .val { color: #16a34a; }
+.mi-price-box.red .val { color: #dc2626; }
+.mi-price-box.amb .val { color: #d97706; }
 .mi-total-quotes { font-size: 11px; color: #aaa; margin-top: 8px; }
 .mi-trend-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
 .mi-trend-up { background: #fef2f2; color: #dc2626; }
@@ -157,9 +163,9 @@ function miRender(data) {
     }
     var html='<div class="mi-section"><div class="mi-section-label">Pricing</div><div class="mi-price-grid">';
     html+='<div class="mi-price-box hl"><div class="lbl">Last Paid</div><div class="val">'+miFmt(data.last_paid)+'</div></div>';
-    html+='<div class="mi-price-box"><div class="lbl">Avg Price</div><div class="val">'+miFmt(data.avg_price)+'</div></div>';
-    html+='<div class="mi-price-box"><div class="lbl">Min Price</div><div class="val">'+miFmt(data.min_price)+'</div></div>';
-    html+='<div class="mi-price-box"><div class="lbl">Max Price</div><div class="val">'+miFmt(data.max_price)+'</div></div>';
+    html+='<div class="mi-price-box amb"><div class="lbl">Avg Price</div><div class="val">'+miFmt(data.avg_price)+'</div></div>';
+    html+='<div class="mi-price-box grn"><div class="lbl">Min Price</div><div class="val">'+miFmt(data.min_price)+'</div></div>';
+    html+='<div class="mi-price-box red"><div class="lbl">Max Price</div><div class="val">'+miFmt(data.max_price)+'</div></div>';
     html+='</div><div class="mi-total-quotes">'+data.total_quotes+' total quotes</div></div>';
     html+='<div class="mi-section"><div class="mi-section-label">90-Day Trend</div>'+miTrendBadge(data.trend);
     if (data.recent_count>0) html+='<span style="font-size:11px;color:#aaa;margin-left:8px;">'+data.recent_count+' recent · avg '+miFmt(data.recent_avg)+'</span>';
