@@ -127,7 +127,7 @@ function miProcessRecords(records) {
         var price=parseFloat(r.Price_Per_Lb)||0;
         if (price<=0) return;
         validCount++;
-        var sup=r.Supplier_LU||'Unknown', lt=r.Lead_Time_Drop_Down||'', qd=r.Quote_Date?new Date(r.Quote_Date):null;
+        var sup=r.Supplier_Name||r.Supplier_LU||'Unknown', lt=r.Lead_Time_Drop_Down||'', qd=r.Quote_Date?new Date(r.Quote_Date):null;
         if (first) { lastPaid=price; first=false; }
         if (min===null||price<min) min=price;
         if (max===null||price>max) max=price;
