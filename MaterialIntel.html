@@ -34,21 +34,21 @@ body { font-family: 'DM Sans', sans-serif; background: transparent; overflow: hi
 .mi-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #9BA3B0; margin-bottom: 8px; }
 .mi-price-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
 .mi-price-box { background: #f9fafb; border-radius: 8px; padding: 10px 12px; border: 1px solid #f0f0f0; }
-.mi-price-box.hl  { background: #eff6ff; border-color: #bfdbfe; }
-.mi-price-box.grn { background: #f0fdf4; border-color: #bbf7d0; }
-.mi-price-box.red { background: #fef2f2; border-color: #fecaca; }
-.mi-price-box.amb { background: #fffbeb; border-color: #fde68a; }
+.mi-price-box.hl  { background: #eff6ff; border-color: #93c5fd; }
+.mi-price-box.grn { background: #f0fdf4; border-color: #6ee7b7; }
+.mi-price-box.red { background: #fef2f2; border-color: #fca5a5; }
+.mi-price-box.amb { background: #f5f3ff; border-color: #c4b5fd; }
 .mi-price-box .lbl { font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
 .mi-price-box .val { font-size: 18px; font-weight: 700; color: #1a1a1a; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
-.mi-price-box.hl  .val { color: #2563eb; }
-.mi-price-box.grn .val { color: #16a34a; }
-.mi-price-box.red .val { color: #dc2626; }
-.mi-price-box.amb .val { color: #d97706; }
+.mi-price-box.hl  .val { color: #3B82F6; }
+.mi-price-box.amb .val { color: #8B5CF6; }
+.mi-price-box.grn .val { color: #10B981; }
+.mi-price-box.red .val { color: #EF4444; }
 .mi-total-quotes { font-size: 11px; color: #aaa; margin-top: 8px; }
 .mi-trend-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
-.mi-trend-up { background: #fef2f2; color: #dc2626; }
-.mi-trend-down { background: #f0fdf4; color: #16a34a; }
-.mi-trend-flat { background: #f0f9ff; color: #0284c7; }
+.mi-trend-up { background: #fef2f2; color: #EF4444; }
+.mi-trend-down { background: #f0fdf4; color: #10B981; }
+.mi-trend-flat { background: #f0f9ff; color: #3B82F6; }
 .mi-trend-insufficient { background: #f9fafb; color: #9ca3af; }
 .mi-table { width: 100%; border-collapse: collapse; }
 .mi-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #999; font-weight: 600; padding: 4px 0 6px; border-bottom: 1px solid #f0f0f0; text-align: left; }
@@ -58,7 +58,7 @@ body { font-family: 'DM Sans', sans-serif; background: transparent; overflow: hi
 .mi-bar-fill { height: 100%; border-radius: 4px; background: #3a3a3a; }
 .mi-badge { display: inline-block; background: #f0f0f0; color: #555; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
 .mi-loading { text-align: center; color: #aaa; padding: 40px 0; font-size: 13px; }
-.mi-error { color: #dc2626; font-size: 12px; padding: 12px; background: #fef2f2; border-radius: 6px; }
+.mi-error { color: #EF4444; font-size: 12px; padding: 12px; background: #fef2f2; border-radius: 6px; }
 .mi-no-data { text-align: center; padding: 32px 16px; color: #9ca3af; }
 .mi-no-data-icon { font-size: 32px; margin-bottom: 8px; }
 .mi-no-data-text { font-size: 13px; font-weight: 600; }
@@ -197,11 +197,7 @@ function miRender(data) {
 // ── THE KEY FIX: handle trigger opens the panel directly (no postMessage) ──
 function miHandleTrigger(triggerVal) {
     try {
-        // Fix unescaped inch-mark quotes inside JSON string values
-        // Strategy: replace all " chars inside value positions with in
-        // Works by replacing :" ... " patterns, escaping any internal quotes
         var sanitized = triggerVal.replace(/("(?:materialName|materialType|specification|material|formType)":\s*")((?:[^"\\]|\\.)*)(")/g, function(match, key, value, close) {
-            // Escape any unescaped " inside the value
             var fixed = value.replace(/"/g, '\\"');
             return key + fixed + close;
         });
@@ -209,7 +205,6 @@ function miHandleTrigger(triggerVal) {
         try {
             trigger = JSON.parse(sanitized);
         } catch(e2) {
-            // Last resort: strip inch marks from the raw string
             var fallback = triggerVal.replace(/"([^"{}:,\[\]]*)"([^"{}:,\[\]]*)"(?=\s*[,}])/g, '"$1in$2"');
             trigger = JSON.parse(fallback);
         }
@@ -224,15 +219,12 @@ function miHandleTrigger(triggerVal) {
         };
         miCache = {};
 
-        // Set header subtitle to material name
         document.getElementById('mi-panel-subtitle').textContent = trigger.materialName || 'Material Intelligence';
 
-        // Reset to My Quotes tab
         miCurrentTab = 'my';
         document.getElementById('mi-tab-my').className = 'mi-tab active';
         document.getElementById('mi-tab-industry').className = 'mi-tab';
 
-        // Open the modal and load data
         miOpen();
         miLoadData('my', miCurrentParams);
 
@@ -311,13 +303,11 @@ function miPoll() {
 ZOHO.CREATOR.init().then(function() {
     try { ZOHO.CREATOR.UI.resize({ width: "1px", height: "1px" }); } catch(e) {}
 
-    // Try to get project_id from query params
     try {
         var qp = ZOHO.CREATOR.UTIL.getQueryParams();
         if (qp && qp.project_id) miProjectId = qp.project_id;
     } catch(e) {}
 
-    // Try getCurrentPageData as fallback
     if (!miProjectId) {
         try {
             var pd = ZOHO.CREATOR.UTIL.getCurrentPageData ? ZOHO.CREATOR.UTIL.getCurrentPageData() : null;
