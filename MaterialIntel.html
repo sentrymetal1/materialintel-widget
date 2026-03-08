@@ -86,33 +86,10 @@ var miCurrentParams = null;
 var miCurrentTab = 'my';
 var miLastTrigger = '';
 var miProjectId = null;
+var miManufacturerId = null;
 var miFirstPoll = true;
 
-(function() {
-    // Try referrer first
-    var url = document.referrer || '';
-    var m = url.match(/project_id=([0-9]+)/);
-    if (m) { miProjectId = m[1]; }
-    // Try query params (widget URL params passed by Zoho)
-    if (!miProjectId) {
-        try {
-            var p = ZOHO.CREATOR.UTIL.getQueryParams();
-            if (p && p.project_id) miProjectId = p.project_id;
-        } catch(e) {}
-    }
-    // Try parent window URL
-    if (!miProjectId) {
-        try {
-            var parentUrl = window.parent.location.href;
-            var m2 = parentUrl.match(/project_id=([0-9]+)/);
-            if (m2) miProjectId = m2[1];
-        } catch(e) {}
-    }
-    // Debug
-    setTimeout(function() {
-        miSetStatus('ref:' + document.referrer.substring(0,60) + ' id:' + miProjectId);
-    }, 500);
-})();
+// project_id will be resolved after SDK init
 
 function miSetStatus(msg) { var el = document.getElementById('mi-status'); if (el) el.textContent = msg; }
 
@@ -233,24 +210,69 @@ function miLoadData(tab,p) {
 }
 
 function miPoll() {
-    if (!miProjectId) { miSetStatus('No project ID'); return; }
-    ZOHO.CREATOR.API.getAllRecords({ appName:'type-formsheet-2-18-21', reportName:'All_Mcp_customer_Projects', criteria:'(ID == '+miProjectId+')', page:1, pageSize:1 })
+    var opts = {
+        appName: 'type-formsheet-2-18-21',
+        reportName: 'All_Mcp_customer_Projects',
+        page: 1,
+        pageSize: 1
+    };
+    // Best filter: specific project
+    if (miProjectId) {
+        opts.criteria = '(ID == ' + miProjectId + ')';
+    // Next best: scope to manufacturer (prevents cross-manufacturer bleed)
+    } else if (miManufacturerId) {
+        opts.criteria = '(MANUFACTURE == ' + miManufacturerId + ')';
+    }
+    // No filter fallback only used on very first poll to bootstrap manufacturerId
+
+    ZOHO.CREATOR.API.getAllRecords(opts)
     .then(function(response) {
-        if (response&&response.code===3000&&response.data&&response.data.length>0) {
-            var triggerVal=response.data[0].Intel_Trigger||'';
-            miSetStatus('● '+new Date().toLocaleTimeString());
-            if (miFirstPoll) { miFirstPoll=false; miLastTrigger=triggerVal; }
-            else if (triggerVal&&triggerVal!==miLastTrigger&&triggerVal.indexOf('materialSelected')!==-1) { miLastTrigger=triggerVal; miHandleTrigger(triggerVal); }
+        if (response && response.code === 3000 && response.data && response.data.length > 0) {
+            var rec = response.data[0];
+            // Bootstrap IDs from first record
+            if (!miProjectId && rec.ID) miProjectId = rec.ID;
+            if (!miManufacturerId && rec.MANUFACTURE) miManufacturerId = rec.MANUFACTURE;
+            var triggerVal = rec.Intel_Trigger || '';
+            miSetStatus('● ' + new Date().toLocaleTimeString() + ' mfg:' + (miManufacturerId ? miManufacturerId.toString().substring(0,6) : 'none'));
+            if (miFirstPoll) { miFirstPoll = false; miLastTrigger = triggerVal; }
+            else if (triggerVal && triggerVal !== miLastTrigger && triggerVal.indexOf('materialSelected') !== -1) {
+                miLastTrigger = triggerVal;
+                miHandleTrigger(triggerVal);
+            }
+        } else {
+            miSetStatus('Poll: ' + JSON.stringify(response).substring(0,40));
         }
-    }).catch(function(){ miSetStatus('Poll err'); });
+    }).catch(function(err){ miSetStatus('Poll err: ' + JSON.stringify(err).substring(0,30)); });
+}
+
+function miStartPolling() {
+    miSetStatus('● ' + new Date().toLocaleTimeString());
+    miPoll();
+    setInterval(miPoll, 3000);
 }
 
 ZOHO.CREATOR.init().then(function() {
-    miSetStatus('ready');
     try { ZOHO.CREATOR.UI.resize({ width:"1px", height:"1px" }); } catch(e) {}
-    miPoll();
-    setInterval(miPoll, 3000);
-}).catch(function() { miSetStatus('SDK err'); });
+
+    // Try getQueryParams (synchronous in some SDK versions)
+    try {
+        var qp = ZOHO.CREATOR.UTIL.getQueryParams();
+        if (qp && qp.project_id) { miProjectId = qp.project_id; }
+    } catch(e) {}
+
+    // Try getCurrentPage to extract record ID
+    if (!miProjectId) {
+        try {
+            var pageData = ZOHO.CREATOR.UTIL.getCurrentPageData
+                         ? ZOHO.CREATOR.UTIL.getCurrentPageData()
+                         : null;
+            if (pageData && pageData.ID) miProjectId = pageData.ID;
+        } catch(e) {}
+    }
+
+    miSetStatus('SDK OK id:' + (miProjectId || 'none'));
+    miStartPolling();
+}).catch(function(err) { miSetStatus('SDK err: ' + JSON.stringify(err).substring(0,30)); });
 </script>
 </body>
 </html>
