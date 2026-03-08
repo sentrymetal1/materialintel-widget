@@ -236,6 +236,12 @@ function miLoadData(tab, p) {
     }).then(function(response) {
         if (response && response.code === 3000) {
             var data = miProcessRecords(response.data);
+            // Debug: log first record keys to status
+            if (response.data && response.data.length > 0) {
+                var rec = response.data[0];
+                var supFields = Object.keys(rec).filter(function(k){ return k.toLowerCase().indexOf('sup') !== -1; });
+                miSetStatus('sup fields: ' + supFields.join(', ') + ' | val: ' + rec[supFields[0]]);
+            }
             miCache[cacheKey] = data;
             miRender(data);
         } else if (response && response.code === 3100) {
