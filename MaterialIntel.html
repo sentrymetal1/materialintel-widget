@@ -177,7 +177,22 @@ function miRender(data) {
 // ── THE KEY FIX: handle trigger opens the panel directly (no postMessage) ──
 function miHandleTrigger(triggerVal) {
     try {
-        var trigger = JSON.parse(triggerVal);
+        // Fix unescaped inch-mark quotes inside JSON string values
+        // Strategy: replace all " chars inside value positions with in
+        // Works by replacing :" ... " patterns, escaping any internal quotes
+        var sanitized = triggerVal.replace(/("(?:materialName|materialType|specification|material|formType)":\s*")((?:[^"\\]|\\.)*)(")/g, function(match, key, value, close) {
+            // Escape any unescaped " inside the value
+            var fixed = value.replace(/"/g, '\\"');
+            return key + fixed + close;
+        });
+        var trigger;
+        try {
+            trigger = JSON.parse(sanitized);
+        } catch(e2) {
+            // Last resort: strip inch marks from the raw string
+            var fallback = triggerVal.replace(/"([^"{}:,\[\]]*)"([^"{}:,\[\]]*)"(?=\s*[,}])/g, '"$1in$2"');
+            trigger = JSON.parse(fallback);
+        }
         if (trigger.type !== 'materialSelected') return;
 
         miCurrentParams = {
