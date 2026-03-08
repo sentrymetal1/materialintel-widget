@@ -178,17 +178,12 @@ function miRender(data) {
 
 function miHandleTrigger(triggerVal) {
     try {
-        var trigger=JSON.parse(triggerVal);
-        if (trigger.type!=='materialSelected') return;
-        miCurrentParams={ materialType:trigger.materialType, specification:trigger.specification, material:trigger.material, formType:trigger.formType, manufacturerId:trigger.manufacturerId };
-        miCache={};
-        document.getElementById('mi-panel-subtitle').textContent=trigger.materialName||'';
-        miCurrentTab='my';
-        document.getElementById('mi-tab-my').className='mi-tab active';
-        document.getElementById('mi-tab-industry').className='mi-tab';
-        miOpen();
-        miLoadData('my',miCurrentParams);
-    } catch(e) { miSetStatus('Parse err: '+e.message); }
+        var trigger = JSON.parse(triggerVal);
+        if (trigger.type !== 'materialSelected') return;
+        // Send to parent page (snippet listens there)
+        try { window.parent.postMessage(trigger, '*'); } catch(e) {}
+        miSetStatus('Sent to parent ✓');
+    } catch(e) { miSetStatus('Parse err: ' + e.message); }
 }
 
 function miLoadData(tab,p) {
