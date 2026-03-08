@@ -1,300 +1,239 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Material Intel</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://js.zohostatic.com/creator/widgets/version/1.0/widgetsdk-min.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; color: #2d2d2d; background: #f5f6f8; padding: 16px; }
-  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  h2 { font-size: 15px; font-weight: 600; color: #1a1a1a; }
-  .toggle-wrap { display: flex; align-items: center; background: #f0f0f0; border-radius: 20px; padding: 3px; gap: 2px; }
-  .toggle-btn { padding: 5px 14px; border-radius: 16px; border: none; background: transparent; font-size: 12px; font-weight: 600; color: #888; cursor: pointer; transition: all 0.15s; }
-  .toggle-btn.active { background: #fff; color: #2563eb; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
-  .panel { background: #fff; border-radius: 8px; border: 1px solid #e4e7ec; padding: 16px; }
-  .section { margin-bottom: 16px; }
-  .section:last-child { margin-bottom: 0; }
-  .section-label { font-size: 11px; color: #888; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-  .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .price-box { background: #f9fafb; border-radius: 6px; padding: 10px 12px; }
-  .price-box .label { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.04em; }
-  .price-box .value { font-size: 18px; font-weight: 600; color: #1a1a1a; margin-top: 2px; }
-  .price-box.highlight .value { color: #2563eb; }
-  .trend-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
-  .trend-up { background: #fef2f2; color: #dc2626; }
-  .trend-down { background: #f0fdf4; color: #16a34a; }
-  .trend-flat { background: #f0f9ff; color: #0284c7; }
-  .trend-insufficient { background: #f9fafb; color: #9ca3af; }
-  .trend-arrow { font-size: 16px; }
-  table { width: 100%; border-collapse: collapse; }
-  th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #999; font-weight: 600; padding: 4px 8px 6px 0; border-bottom: 1px solid #f0f0f0; text-align: left; }
-  td { padding: 6px 8px 6px 0; border-bottom: 1px solid #f9f9f9; font-size: 12px; color: #2d2d2d; vertical-align: middle; }
-  tr:last-child td { border-bottom: none; }
-  .bar-wrap { background: #f0f0f0; border-radius: 4px; height: 6px; width: 80px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 6px; }
-  .bar-fill { height: 100%; border-radius: 4px; background: #2563eb; }
-  .badge { display: inline-block; background: #f0f0f0; color: #555; border-radius: 4px; padding: 2px 7px; font-size: 11px; }
-  .total-quotes { font-size: 11px; color: #aaa; margin-top: 4px; }
-  .loading { color: #aaa; font-size: 13px; padding: 24px 0; text-align: center; }
-  .error { color: #dc2626; font-size: 11px; padding: 12px; background: #fef2f2; border-radius: 6px; word-break: break-all; }
-  .debug { color: #555; font-size: 11px; padding: 8px; background: #f9fafb; border-radius: 6px; margin-top: 8px; word-break: break-all; }
-  .hidden { display: none; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: transparent; overflow: hidden; }
+#mi-status { position: fixed; bottom: 6px; right: 6px; background: #1a1a1a; color: #00ff00; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 10px; z-index: 99999; opacity: 0.8; }
+#mi-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9998; }
+#mi-panel { position: fixed; top: 0; right: -420px; width: 400px; height: 100vh; background: #fff; box-shadow: -4px 0 24px rgba(0,0,0,0.15); z-index: 9999; transition: right 0.3s ease; display: flex; flex-direction: column; }
+#mi-panel.open { right: 0; }
+#mi-panel-header { background: linear-gradient(135deg, #5F94CE, #4a7bb5); color: white; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+#mi-panel-title { font-size: 14px; font-weight: 700; }
+#mi-panel-subtitle { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+#mi-close { background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px; line-height: 28px; text-align: center; flex-shrink: 0; }
+#mi-close:hover { background: rgba(255,255,255,0.35); }
+#mi-tabs { display: flex; border-bottom: 1px solid #e4e7ec; flex-shrink: 0; }
+.mi-tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 12px; font-weight: 600; color: #888; border-bottom: 2px solid transparent; transition: all 0.15s; }
+.mi-tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+#mi-body { flex: 1; overflow-y: auto; padding: 16px; }
+.mi-section { margin-bottom: 16px; }
+.mi-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #9BA3B0; margin-bottom: 8px; }
+.mi-price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mi-price-box { background: #f9fafb; border-radius: 8px; padding: 10px 12px; }
+.mi-price-box .lbl { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.04em; }
+.mi-price-box .val { font-size: 20px; font-weight: 700; color: #1a1a1a; margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+.mi-price-box.hl .val { color: #2563eb; }
+.mi-total-quotes { font-size: 11px; color: #aaa; margin-top: 6px; }
+.mi-trend-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+.mi-trend-up { background: #fef2f2; color: #dc2626; }
+.mi-trend-down { background: #f0fdf4; color: #16a34a; }
+.mi-trend-flat { background: #f0f9ff; color: #0284c7; }
+.mi-trend-insufficient { background: #f9fafb; color: #9ca3af; }
+.mi-table { width: 100%; border-collapse: collapse; }
+.mi-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #999; font-weight: 600; padding: 4px 0 6px; border-bottom: 1px solid #f0f0f0; text-align: left; }
+.mi-table td { padding: 6px 0; border-bottom: 1px solid #f9f9f9; font-size: 12px; color: #2d2d2d; vertical-align: middle; }
+.mi-table tr:last-child td { border-bottom: none; }
+.mi-bar-wrap { background: #f0f0f0; border-radius: 4px; height: 5px; width: 60px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 6px; }
+.mi-bar-fill { height: 100%; border-radius: 4px; background: #2563eb; }
+.mi-badge { display: inline-block; background: #f0f0f0; color: #555; border-radius: 4px; padding: 2px 6px; font-size: 11px; }
+.mi-loading { text-align: center; color: #aaa; padding: 32px 0; font-size: 13px; }
+.mi-error { color: #dc2626; font-size: 12px; padding: 12px; background: #fef2f2; border-radius: 6px; }
 </style>
 </head>
 <body>
-
-<div class="header">
-  <h2>Material Intelligence</h2>
-  <div class="toggle-wrap">
-    <button class="toggle-btn active" id="btn-my" onclick="switchMode('my_quotes')">My Quotes</button>
-    <button class="toggle-btn" id="btn-industry" onclick="switchMode('all_quotes')">Industry</button>
-  </div>
+<div id="mi-overlay" onclick="miClose()"></div>
+<div id="mi-panel">
+    <div id="mi-panel-header">
+        <div>
+            <div id="mi-panel-title">Material Intelligence</div>
+            <div id="mi-panel-subtitle">—</div>
+        </div>
+        <button id="mi-close" onclick="miClose()">✕</button>
+    </div>
+    <div id="mi-tabs">
+        <div class="mi-tab active" id="mi-tab-my" onclick="miSwitchTab('my')">My Quotes</div>
+        <div class="mi-tab" id="mi-tab-industry" onclick="miSwitchTab('industry')">Industry</div>
+    </div>
+    <div id="mi-body">
+        <div class="mi-loading">Initializing...</div>
+    </div>
 </div>
-
-<div class="panel">
-  <div id="view-my">
-    <div class="loading" id="loading-my">Loading...</div>
-    <div id="content-my" class="hidden"></div>
-  </div>
-  <div id="view-industry" class="hidden">
-    <div class="loading" id="loading-industry">Loading...</div>
-    <div id="content-industry" class="hidden"></div>
-  </div>
-</div>
+<div id="mi-status">Starting...</div>
 
 <script>
-  const cache = {};
+var miCache = {};
+var miCurrentParams = null;
+var miCurrentTab = 'my';
+var miLastTrigger = '';
+var miProjectId = null;
 
-  // HARDCODED TEST IDs - from first row of RFQs_Sent report
-  var TEST_PARAMS = {
-    materialType:   "4111484000000388655",
-    specification:  "4111484000000391099",
-    material:       "4111484000004208019",
-    formType:       "4111484000000372131",
-    manufacturerId: "4111484000001622005"
-  };
-
-  function fmt(val) {
-    if (!val && val !== 0) return "-";
-    return "$" + parseFloat(val).toFixed(4);
-  }
-
-  function trendBadge(trend) {
-    const map = {
-      "up":                ["trend-up",          "▲", "Trending Up"],
-      "down":              ["trend-down",         "▼", "Trending Down"],
-      "flat":              ["trend-flat",         "→", "Stable"],
-      "insufficient-data": ["trend-insufficient", "-", "Insufficient Data"]
-    };
-    const [cls, arrow, label] = map[trend] || map["insufficient-data"];
-    return `<span class="trend-badge ${cls}"><span class="trend-arrow">${arrow}</span>${label}</span>`;
-  }
-
-  function processRecords(records) {
-    if (!records || records.length === 0) {
-      return {
-        total_quotes: 0,
-        last_paid: 0, min_price: 0, max_price: 0, avg_price: 0,
-        trend: "insufficient-data", recent_avg: 0, recent_count: 0,
-        supplier_summary: [], lead_time_summary: []
-      };
-    }
-
-    var total = 0, min = null, max = null, lastPaid = 0;
-    var supplierTotals = {}, supplierCounts = {};
-    var leadTimeCounts = {};
-    var cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 90);
-    var recentTotal = 0, recentCount = 0;
-    var first = true;
-
+function miSetStatus(msg) {
+    var el = document.getElementById('mi-status');
+    if (el) el.textContent = msg;
+}
+function miOpen() {
+    document.getElementById('mi-overlay').style.display = 'block';
+    document.getElementById('mi-panel').classList.add('open');
+    try { ZOHO.CREATOR.UI.resize({ width: "100vw", height: "100vh" }); } catch(e) {}
+}
+function miClose() {
+    document.getElementById('mi-overlay').style.display = 'none';
+    document.getElementById('mi-panel').classList.remove('open');
+    try { ZOHO.CREATOR.UI.resize({ width: "1px", height: "1px" }); } catch(e) {}
+}
+function miSwitchTab(tab) {
+    miCurrentTab = tab;
+    document.getElementById('mi-tab-my').className = 'mi-tab' + (tab === 'my' ? ' active' : '');
+    document.getElementById('mi-tab-industry').className = 'mi-tab' + (tab === 'industry' ? ' active' : '');
+    if (miCurrentParams) miLoadData(tab, miCurrentParams);
+}
+function miFmt(val) {
+    if (!val && val !== 0) return '—';
+    return '$' + parseFloat(val).toFixed(4);
+}
+function miTrendBadge(trend) {
+    var map = { 'up': ['mi-trend-up','▲','Trending Up'], 'down': ['mi-trend-down','▼','Trending Down'], 'flat': ['mi-trend-flat','→','Stable'], 'insufficient-data': ['mi-trend-insufficient','—','Insufficient Data'] };
+    var t = map[trend] || map['insufficient-data'];
+    return '<span class="mi-trend-badge ' + t[0] + '"><span>' + t[1] + '</span>' + t[2] + '</span>';
+}
+function miProcessRecords(records) {
+    if (!records || records.length === 0) return { total_quotes: 0, last_paid: 0, min_price: 0, max_price: 0, avg_price: 0, trend: 'insufficient-data', recent_avg: 0, recent_count: 0, supplier_summary: [], lead_time_summary: [] };
+    var total = 0, min = null, max = null, lastPaid = 0, supTotals = {}, supCounts = {}, ltCounts = {};
+    var cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 90);
+    var recentTotal = 0, recentCount = 0, first = true;
     records.forEach(function(r) {
-      var price = parseFloat(r.Price_Per_Lb) || 0;
-      var supplier = r.Supplier_Name || "Unknown";
-      var leadTime = r.Lead_Time_Drop_Down || "";
-      var quoteDate = r.Quote_Date ? new Date(r.Quote_Date) : null;
-
-      if (first) { lastPaid = price; first = false; }
-      if (min === null || price < min) min = price;
-      if (max === null || price > max) max = price;
-      total += price;
-
-      if (!supplierTotals[supplier]) { supplierTotals[supplier] = 0; supplierCounts[supplier] = 0; }
-      supplierTotals[supplier] += price;
-      supplierCounts[supplier]++;
-
-      if (leadTime && leadTime !== "null") {
-        leadTimeCounts[leadTime] = (leadTimeCounts[leadTime] || 0) + 1;
-      }
-
-      if (quoteDate && quoteDate >= cutoff) {
-        recentTotal += price;
-        recentCount++;
-      }
+        var price = parseFloat(r.Price_Per_Lb) || 0;
+        var sup = r.Supplier_Name || 'Unknown';
+        var lt = r.Lead_Time_Drop_Down || '';
+        var qd = r.Quote_Date ? new Date(r.Quote_Date) : null;
+        if (first) { lastPaid = price; first = false; }
+        if (min === null || price < min) min = price;
+        if (max === null || price > max) max = price;
+        total += price;
+        if (!supTotals[sup]) { supTotals[sup] = 0; supCounts[sup] = 0; }
+        supTotals[sup] += price; supCounts[sup]++;
+        if (lt && lt !== 'null') ltCounts[lt] = (ltCounts[lt] || 0) + 1;
+        if (qd && qd >= cutoff) { recentTotal += price; recentCount++; }
     });
-
-    var avg = records.length > 0 ? total / records.length : 0;
+    var avg = total / records.length;
     var recentAvg = recentCount > 0 ? recentTotal / recentCount : 0;
-    var trend = "insufficient-data";
-    if (recentAvg > 0 && avg > 0) {
-      trend = recentAvg > avg ? "up" : recentAvg < avg ? "down" : "flat";
-    }
-
-    var supplierSummary = Object.keys(supplierTotals).map(function(name) {
-      return { supplier: name, avg_price: supplierTotals[name] / supplierCounts[name], quote_count: supplierCounts[name] };
-    });
-
-    var leadTimeSummary = Object.keys(leadTimeCounts).map(function(lt) {
-      return { lead_time: lt, count: leadTimeCounts[lt] };
-    });
-
-    return {
-      total_quotes: records.length,
-      last_paid: lastPaid, min_price: min || 0, max_price: max || 0, avg_price: avg,
-      trend: trend, recent_avg: recentAvg, recent_count: recentCount,
-      supplier_summary: supplierSummary, lead_time_summary: leadTimeSummary
-    };
-  }
-
-  function renderPanel(data, containerId, loadingId) {
-    document.getElementById(loadingId).classList.add("hidden");
-    const content = document.getElementById(containerId);
-    content.classList.remove("hidden");
-
-    let html = `<div class="section">
-      <div class="section-label">Pricing</div>
-      <div class="price-grid">
-        <div class="price-box highlight"><div class="label">Last Paid</div><div class="value">${fmt(data.last_paid)}</div></div>
-        <div class="price-box"><div class="label">Avg Price</div><div class="value">${fmt(data.avg_price)}</div></div>
-        <div class="price-box"><div class="label">Min Price</div><div class="value">${fmt(data.min_price)}</div></div>
-        <div class="price-box"><div class="label">Max Price</div><div class="value">${fmt(data.max_price)}</div></div>
-      </div>
-      <div class="total-quotes">${data.total_quotes} total quotes</div>
-    </div>`;
-
-    html += `<div class="section">
-      <div class="section-label">90-Day Trend</div>
-      ${trendBadge(data.trend)}
-      ${data.recent_count > 0 ? `<span style="font-size:11px;color:#aaa;margin-left:8px;">${data.recent_count} recent quotes · avg ${fmt(data.recent_avg)}</span>` : ""}
-    </div>`;
-
+    var trend = 'insufficient-data';
+    if (recentAvg > 0 && avg > 0) trend = recentAvg > avg ? 'up' : recentAvg < avg ? 'down' : 'flat';
+    return { total_quotes: records.length, last_paid: lastPaid, min_price: min||0, max_price: max||0, avg_price: avg, trend: trend, recent_avg: recentAvg, recent_count: recentCount,
+        supplier_summary: Object.keys(supTotals).map(function(n) { return { supplier: n, avg_price: supTotals[n]/supCounts[n], quote_count: supCounts[n] }; }),
+        lead_time_summary: Object.keys(ltCounts).map(function(lt) { return { lead_time: lt, count: ltCounts[lt] }; }) };
+}
+function miRender(data) {
+    var html = '<div class="mi-section"><div class="mi-section-label">Pricing</div><div class="mi-price-grid">';
+    html += '<div class="mi-price-box hl"><div class="lbl">Last Paid</div><div class="val">' + miFmt(data.last_paid) + '</div></div>';
+    html += '<div class="mi-price-box"><div class="lbl">Avg Price</div><div class="val">' + miFmt(data.avg_price) + '</div></div>';
+    html += '<div class="mi-price-box"><div class="lbl">Min Price</div><div class="val">' + miFmt(data.min_price) + '</div></div>';
+    html += '<div class="mi-price-box"><div class="lbl">Max Price</div><div class="val">' + miFmt(data.max_price) + '</div></div>';
+    html += '</div><div class="mi-total-quotes">' + data.total_quotes + ' total quotes</div></div>';
+    html += '<div class="mi-section"><div class="mi-section-label">90-Day Trend</div>' + miTrendBadge(data.trend);
+    if (data.recent_count > 0) html += '<span style="font-size:11px;color:#aaa;margin-left:8px;">' + data.recent_count + ' recent · avg ' + miFmt(data.recent_avg) + '</span>';
+    html += '</div>';
     if (data.supplier_summary && data.supplier_summary.length > 0) {
-      const maxAvg = Math.max(...data.supplier_summary.map(s => s.avg_price));
-      html += `<div class="section"><div class="section-label">Suppliers</div>
-        <table><thead><tr><th>Supplier</th><th>Avg/lb</th><th>Quotes</th></tr></thead><tbody>`;
-      data.supplier_summary.forEach(s => {
-        const pct = maxAvg > 0 ? Math.round((s.avg_price / maxAvg) * 100) : 0;
-        html += `<tr><td>${s.supplier}</td><td>${fmt(s.avg_price)}<span class="bar-wrap"><span class="bar-fill" style="width:${pct}%"></span></span></td><td><span class="badge">${s.quote_count}</span></td></tr>`;
-      });
-      html += `</tbody></table></div>`;
+        var maxAvg = Math.max.apply(null, data.supplier_summary.map(function(s) { return s.avg_price; }));
+        html += '<div class="mi-section"><div class="mi-section-label">Suppliers</div><table class="mi-table"><thead><tr><th>Supplier</th><th>Avg/lb</th><th>Quotes</th></tr></thead><tbody>';
+        data.supplier_summary.forEach(function(s) {
+            var pct = maxAvg > 0 ? Math.round((s.avg_price/maxAvg)*100) : 0;
+            html += '<tr><td>' + s.supplier + '</td><td>' + miFmt(s.avg_price) + '<span class="mi-bar-wrap"><span class="mi-bar-fill" style="width:' + pct + '%"></span></span></td><td><span class="mi-badge">' + s.quote_count + '</span></td></tr>';
+        });
+        html += '</tbody></table></div>';
     }
-
     if (data.lead_time_summary && data.lead_time_summary.length > 0) {
-      const maxLT = Math.max(...data.lead_time_summary.map(l => l.count));
-      html += `<div class="section"><div class="section-label">Lead Times</div>
-        <table><thead><tr><th>Lead Time</th><th>Frequency</th></tr></thead><tbody>`;
-      data.lead_time_summary.forEach(l => {
-        const pct = maxLT > 0 ? Math.round((l.count / maxLT) * 100) : 0;
-        html += `<tr><td>${l.lead_time}</td><td><span class="bar-wrap"><span class="bar-fill" style="width:${pct}%"></span></span> <span style="color:#aaa;font-size:11px;">${l.count}</span></td></tr>`;
-      });
-      html += `</tbody></table></div>`;
+        var maxLT = Math.max.apply(null, data.lead_time_summary.map(function(l) { return l.count; }));
+        html += '<div class="mi-section"><div class="mi-section-label">Lead Times</div><table class="mi-table"><thead><tr><th>Lead Time</th><th>Frequency</th></tr></thead><tbody>';
+        data.lead_time_summary.forEach(function(l) {
+            var pct = maxLT > 0 ? Math.round((l.count/maxLT)*100) : 0;
+            html += '<tr><td>' + l.lead_time + '</td><td><span class="mi-bar-wrap"><span class="mi-bar-fill" style="width:' + pct + '%"></span></span> <span style="color:#aaa;font-size:11px;">' + l.count + '</span></td></tr>';
+        });
+        html += '</tbody></table></div>';
     }
-
-    content.innerHTML = html;
-  }
-
-  function showError(containerId, loadingId, msg, debug) {
-    document.getElementById(loadingId).classList.add("hidden");
-    const el = document.getElementById(containerId);
-    el.classList.remove("hidden");
-    el.innerHTML = `<div class="error">Error: ${msg}</div>` +
-      (debug ? `<div class="debug">Debug: ${JSON.stringify(debug)}</div>` : "");
-  }
-
-  function switchMode(mode) {
-    const isMyQuotes = mode === "my_quotes";
-    document.getElementById("btn-my").classList.toggle("active", isMyQuotes);
-    document.getElementById("btn-industry").classList.toggle("active", !isMyQuotes);
-    document.getElementById("view-my").classList.toggle("hidden", !isMyQuotes);
-    document.getElementById("view-industry").classList.toggle("hidden", isMyQuotes);
-  }
-
-  function fetchIntel(mode, containerId, loadingId, p) {
-    if (cache[mode]) { renderPanel(cache[mode], containerId, loadingId); return; }
-
+    document.getElementById('mi-body').innerHTML = html;
+}
+function miLoadData(tab, p) {
+    var cacheKey = tab + '_' + p.material;
+    if (miCache[cacheKey]) { miRender(miCache[cacheKey]); return; }
+    document.getElementById('mi-body').innerHTML = '<div class="mi-loading">Loading...</div>';
     var mt = p.materialType, sp = p.specification, ma = p.material, cu = p.manufacturerId;
-    var criteria = "(Material_Type == " + mt + " && Material_Form_Detail == " + sp + " && Material == " + ma + ")";
-    if (mode === "my_quotes") {
-      criteria = "(Material_Type == " + mt + " && Material_Form_Detail == " + sp + " && Material == " + ma + " && Customer_LU == " + cu + ")";
-    }
-
-    var config = {
-      appName: "type-formsheet-2-18-21",
-      reportName: "Material_Intelligence_Structural_RFQ_Sent",
-      criteria: criteria,
-      page: 1,
-      pageSize: 200
-    };
-
-    // Show criteria in debug area while loading
-    document.getElementById(loadingId).textContent = "Querying... criteria: " + criteria;
-
-    ZOHO.CREATOR.API.getAllRecords(config).then(function(response) {
-      if (response && response.code === 3000) {
-        var data = processRecords(response.data);
-        cache[mode] = data;
-        renderPanel(data, containerId, loadingId);
-      } else {
-        showError(containerId, loadingId, "Query failed code: " + (response && response.code), response);
-      }
+    var criteria = '(Material_Type == ' + mt + ' && Material_Form_Detail == ' + sp + ' && Material == ' + ma + ')';
+    if (tab === 'my' && cu) criteria = '(Material_Type == ' + mt + ' && Material_Form_Detail == ' + sp + ' && Material == ' + ma + ' && Customer_LU == ' + cu + ')';
+    ZOHO.CREATOR.API.getAllRecords({
+        appName: 'type-formsheet-2-18-21',
+        reportName: 'Material_Intelligence_Structural_RFQ_Sent',
+        criteria: criteria, page: 1, pageSize: 200
+    }).then(function(response) {
+        if (response && response.code === 3000) {
+            var data = miProcessRecords(response.data);
+            miCache[cacheKey] = data;
+            miRender(data);
+        } else {
+            document.getElementById('mi-body').innerHTML = '<div class="mi-error">Query failed: ' + JSON.stringify(response) + '</div>';
+        }
     }).catch(function(err) {
-      showError(containerId, loadingId, "getAllRecords error", err);
+        document.getElementById('mi-body').innerHTML = '<div class="mi-error">Error: ' + JSON.stringify(err) + '</div>';
     });
-  }
-
-  // Listen for postMessage from Zoho form (Intel checkbox trigger)
-  window.addEventListener("message", function(event) {
-    if (event.data && event.data.type === "materialSelected") {
-      var trigger = event.data;
-      var p = {
-        materialType:   trigger.materialType,
-        specification:  trigger.specification,
-        material:       trigger.material,
-        formType:       trigger.formType,
-        manufacturerId: trigger.manufacturerId || TEST_PARAMS.manufacturerId
-      };
-      // Update header with material name
-      if (trigger.materialName) {
-        document.querySelector("h2").textContent = trigger.materialName;
-      }
-      // Clear cache and reload
-      cache["my_quotes"] = null;
-      cache["all_quotes"] = null;
-      // Reset to My Quotes tab
-      switchMode("my_quotes");
-      fetchIntel("my_quotes", "content-my", "loading-my", p);
-      // Re-attach industry listener with new params
-      var industryBtn = document.getElementById("btn-industry");
-      industryBtn.replaceWith(industryBtn.cloneNode(true));
-      document.getElementById("btn-industry").addEventListener("click", function() {
-        fetchIntel("all_quotes", "content-industry", "loading-industry", p);
-      });
-    }
-  });
-
-  ZOHO.CREATOR.init().then(function() {
-    // Load with hardcoded test params initially
-    var p = TEST_PARAMS;
-    fetchIntel("my_quotes", "content-my", "loading-my", p);
-
-    document.getElementById("btn-industry").addEventListener("click", function() {
-      fetchIntel("all_quotes", "content-industry", "loading-industry", p);
+}
+function miHandleTrigger(triggerVal) {
+    try {
+        var trigger = JSON.parse(triggerVal);
+        if (trigger.type === 'materialSelected') {
+            miCurrentParams = { materialType: trigger.materialType, specification: trigger.specification, material: trigger.material, formType: trigger.formType, manufacturerId: trigger.manufacturerId };
+            miCache = {};
+            document.getElementById('mi-panel-subtitle').textContent = trigger.materialName || '';
+            miCurrentTab = 'my';
+            document.getElementById('mi-tab-my').className = 'mi-tab active';
+            document.getElementById('mi-tab-industry').className = 'mi-tab';
+            miOpen();
+            miLoadData('my', miCurrentParams);
+        }
+    } catch(e) { miSetStatus('Parse err: ' + e.message); }
+}
+function miPoll() {
+    ZOHO.CREATOR.API.getAllRecords({
+        appName: 'type-formsheet-2-18-21',
+        reportName: 'All_Mcp_customer_Projects',
+        criteria: '(ID == ' + miProjectId + ')',
+        page: 1, pageSize: 1
+    }).then(function(response) {
+        if (response && response.code === 3000 && response.data && response.data.length > 0) {
+            var triggerVal = response.data[0].Intel_Trigger || '';
+            miSetStatus('Poll OK ' + new Date().toLocaleTimeString());
+            if (triggerVal && triggerVal !== miLastTrigger && triggerVal.indexOf('materialSelected') !== -1) {
+                miLastTrigger = triggerVal;
+                miHandleTrigger(triggerVal);
+            }
+        } else {
+            miSetStatus('Poll: ' + JSON.stringify(response).substring(0,40));
+        }
+    }).catch(function(err) {
+        miSetStatus('Poll err: ' + JSON.stringify(err).substring(0,40));
     });
-
-  }).catch(function(err) {
-    showError("content-my", "loading-my", "SDK init failed", err);
-  });
+}
+ZOHO.CREATOR.init().then(function() {
+    ZOHO.CREATOR.UTIL.getQueryParams().then(function(params) {
+        miProjectId = params.project_id || null;
+        miSetStatus('SDK OK proj:' + (miProjectId || 'none'));
+        if (miProjectId) {
+            try { ZOHO.CREATOR.UI.resize({ width: "1px", height: "1px" }); } catch(e) {}
+            miPoll();
+            setInterval(miPoll, 3000);
+        } else {
+            miSetStatus('No project_id param');
+        }
+    }).catch(function() {
+        miSetStatus('No params - need project_id');
+    });
+}).catch(function(err) {
+    miSetStatus('Init err: ' + JSON.stringify(err).substring(0,40));
+});
 </script>
 </body>
 </html>
