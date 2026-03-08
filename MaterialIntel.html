@@ -89,12 +89,29 @@ var miProjectId = null;
 var miFirstPoll = true;
 
 (function() {
-    var url = document.referrer || window.location.href;
+    // Try referrer first
+    var url = document.referrer || '';
     var m = url.match(/project_id=([0-9]+)/);
     if (m) { miProjectId = m[1]; }
+    // Try query params (widget URL params passed by Zoho)
     if (!miProjectId) {
-        try { var p = ZOHO.CREATOR.UTIL.getQueryParams(); if (p && p.project_id) miProjectId = p.project_id; } catch(e) {}
+        try {
+            var p = ZOHO.CREATOR.UTIL.getQueryParams();
+            if (p && p.project_id) miProjectId = p.project_id;
+        } catch(e) {}
     }
+    // Try parent window URL
+    if (!miProjectId) {
+        try {
+            var parentUrl = window.parent.location.href;
+            var m2 = parentUrl.match(/project_id=([0-9]+)/);
+            if (m2) miProjectId = m2[1];
+        } catch(e) {}
+    }
+    // Debug
+    setTimeout(function() {
+        miSetStatus('ref:' + document.referrer.substring(0,60) + ' id:' + miProjectId);
+    }, 500);
 })();
 
 function miSetStatus(msg) { var el = document.getElementById('mi-status'); if (el) el.textContent = msg; }
