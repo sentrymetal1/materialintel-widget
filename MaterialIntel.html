@@ -108,7 +108,8 @@ function miProcessRecords(records) {
     var recentTotal = 0, recentCount = 0, first = true;
     records.forEach(function(r) {
         var price = parseFloat(r.Price_Per_Lb) || 0;
-        var sup = r.Supplier_Name || 'Unknown';
+        if (price <= 0) return; // skip zero-price records
+        var sup = r.Supplier_LU || 'Unknown';
         var lt = r.Lead_Time_Drop_Down || '';
         var qd = r.Quote_Date ? new Date(r.Quote_Date) : null;
         if (first) { lastPaid = price; first = false; }
@@ -174,11 +175,20 @@ function miLoadData(tab, p) {
             var data = miProcessRecords(response.data);
             miCache[cacheKey] = data;
             miRender(data);
+        } else if (response && response.code === 3100) {
+            var data = miProcessRecords([]);
+            miCache[cacheKey] = data;
+            miRender(data);
         } else {
             document.getElementById('mi-body').innerHTML = '<div class="mi-error">Query failed: ' + JSON.stringify(response) + '</div>';
         }
     }).catch(function(err) {
-        document.getElementById('mi-body').innerHTML = '<div class="mi-error">Error: ' + JSON.stringify(err) + '</div>';
+        if (err && err.responseText && err.responseText.indexOf('3100') !== -1) {
+            var data = miProcessRecords([]);
+            miRender(data);
+        } else {
+            document.getElementById('mi-body').innerHTML = '<div class="mi-error">Error: ' + JSON.stringify(err) + '</div>';
+        }
     });
 }
 function miHandleTrigger(triggerVal) {
@@ -187,7 +197,12 @@ function miHandleTrigger(triggerVal) {
         if (trigger.type === 'materialSelected') {
             miCurrentParams = { materialType: trigger.materialType, specification: trigger.specification, material: trigger.material, formType: trigger.formType, manufacturerId: trigger.manufacturerId };
             miCache = {};
-            document.getElementById('mi-panel-subtitle').textContent = trigger.materialName || '';
+            var parts = [];
+            if (trigger.descStructural) parts.push(trigger.descStructural);
+            if (trigger.materialName) parts.push(trigger.materialName);
+            var fullDesc = parts.join(' | ');
+            document.getElementById('mi-panel-title').textContent = 'Material Intelligence';
+            document.getElementById('mi-panel-subtitle').textContent = fullDesc || trigger.materialName || '';
             miCurrentTab = 'my';
             document.getElementById('mi-tab-my').className = 'mi-tab active';
             document.getElementById('mi-tab-industry').className = 'mi-tab';
