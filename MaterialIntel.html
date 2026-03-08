@@ -217,20 +217,50 @@ function miPoll() {
         miSetStatus('Poll err: ' + JSON.stringify(err).substring(0,40));
     });
 }
+function miExtractProjectId(url) {
+    if (!url) return null;
+    var match = url.match(/project_id=([^&\s]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
 ZOHO.CREATOR.init().then(function() {
-    ZOHO.CREATOR.UTIL.getQueryParams().then(function(params) {
-        miProjectId = params.project_id || null;
-        miSetStatus('SDK OK proj:' + (miProjectId || 'none'));
-        if (miProjectId) {
-            try { ZOHO.CREATOR.UI.resize({ width: "1px", height: "1px" }); } catch(e) {}
-            miPoll();
-            setInterval(miPoll, 3000);
-        } else {
-            miSetStatus('No project_id param');
+    // Try multiple sources for project_id
+    miProjectId = miExtractProjectId(window.location.href)
+                || miExtractProjectId(document.referrer)
+                || miExtractProjectId(window.location.search)
+                || miExtractProjectId(window.location.hash);
+
+    // If still not found, try SDK query params
+    if (!miProjectId) {
+        try {
+            ZOHO.CREATOR.UTIL.getQueryParams().then(function(params) {
+                miProjectId = params.project_id || null;
+                miSetStatus('SDK proj:' + (miProjectId || 'none'));
+                if (miProjectId) {
+                    try { ZOHO.CREATOR.UI.resize({ width: "1px", height: "1px" }); } catch(e) {}
+                    miPoll();
+                    setInterval(miPoll, 3000);
+                } else {
+                    // Last resort: get current page URL from SDK
+                    miSetStatus('Trying page context...');
+                    ZOHO.CREATOR.UTIL.getPageData().then(function(data) {
+                        miSetStatus('Page data: ' + JSON.stringify(data).substring(0,60));
+                    }).catch(function() {
+                        miSetStatus('No project_id found anywhere');
+                    });
+                }
+            }).catch(function() {
+                miSetStatus('No params available');
+            });
+        } catch(e) {
+            miSetStatus('SDK util err: ' + e.message);
         }
-    }).catch(function() {
-        miSetStatus('No params - need project_id');
-    });
+    } else {
+        miSetStatus('SDK OK proj:' + miProjectId);
+        try { ZOHO.CREATOR.UI.resize({ width: "1px", height: "1px" }); } catch(e) {}
+        miPoll();
+        setInterval(miPoll, 3000);
+    }
 }).catch(function(err) {
     miSetStatus('Init err: ' + JSON.stringify(err).substring(0,40));
 });
