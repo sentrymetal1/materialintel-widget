@@ -192,6 +192,15 @@ function miRender(data) {
         html+='</tbody></table></div>';
     }
     document.getElementById('mi-body').innerHTML=html;
+
+    // Send rendered HTML to parent snippet panel
+    try {
+        window.parent.postMessage({
+            type: 'mi_data_ready',
+            html: html,
+            tab: miCurrentTab
+        }, '*');
+    } catch(e) {}
 }
 
 // ── THE KEY FIX: handle trigger opens the panel directly (no postMessage) ──
@@ -227,6 +236,15 @@ function miHandleTrigger(triggerVal) {
 
         miOpen();
         miLoadData('my', miCurrentParams);
+
+        // Notify parent page (snippet) that a material was selected
+        try {
+            window.parent.postMessage({
+                type: 'mi_material_selected',
+                materialName: trigger.materialName || '',
+                params: miCurrentParams
+            }, '*');
+        } catch(e) {}
 
         miSetStatus('● Open: ' + (trigger.materialName || '').substring(0, 20));
     } catch(e) {
@@ -302,6 +320,15 @@ function miPoll() {
 
 ZOHO.CREATOR.init().then(function() {
     try { ZOHO.CREATOR.UI.resize({ width: "1px", height: "1px" }); } catch(e) {}
+
+    // Listen for tab switch requests from parent snippet
+    window.addEventListener('message', function(event) {
+        var d = event.data;
+        if (!d || typeof d !== 'object') return;
+        if (d.type === 'mi_switch_tab' && d.tab && miCurrentParams) {
+            miSwitchTab(d.tab);
+        }
+    });
 
     try {
         var qp = ZOHO.CREATOR.UTIL.getQueryParams();
