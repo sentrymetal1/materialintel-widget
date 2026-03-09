@@ -1,353 +1,165 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<%{
+	this_page_url = "#Page:Project_Dashboard";
+	input.project_id = ifnull(input.project_id,"<%=project_id%>");
+	projDesc = ifnull(input.description,"");
+	projDate = zoho.currentdate.toString("MMM dd, yyyy");
+	if(input.projWt != null)
+	{
+		input.projWt = input.projWt.toString("#,##0.00");
+	}
+	else
+	{
+		input.projWt = "—";
+	}
+	if(input.orderWt != null)
+	{
+		input.orderWt = input.orderWt.toString("#,##0.00");
+	}
+	else
+	{
+		input.orderWt = "—";
+	}
+	if(input.totalMatAmt != null)
+	{
+		input.totalMatAmt = input.totalMatAmt.toString("#,##0.00");
+	}
+	else
+	{
+		input.totalMatAmt = "—";
+	}
+	if(input.totalLaborAmt != null)
+	{
+		input.totalLaborAmt = input.totalLaborAmt.toString("#,##0.00");
+	}
+	else
+	{
+		input.totalLaborAmt = "—";
+	}
+	if(input.totalLaborHrs != null)
+	{
+		input.totalLaborHrs = input.totalLaborHrs.toString("#,##0.00");
+	}
+	else
+	{
+		input.totalLaborHrs = "—";
+	}
+	if(input.outsourceTotal != null)
+	{
+		input.outsourceTotal = input.outsourceTotal.toString("#,##0.00");
+	}
+	else
+	{
+		input.outsourceTotal = "—";
+	}
+	if(input.markupAmt != null)
+	{
+		input.markupAmt = input.markupAmt.toString("#,##0.00");
+	}
+	else
+	{
+		input.markupAmt = "—";
+	}
+	if(input.projectTotal != null)
+	{
+		input.projectTotal = input.projectTotal.toString("#,##0.00");
+	}
+	else
+	{
+		input.projectTotal = "—";
+	}
+	%>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://js.zohostatic.com/creator/widgets/version/1.0/widgetsdk-min.js"></script>
+
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'DM Sans', sans-serif; background: transparent; overflow: hidden; pointer-events: none; }
+/* ─── RESET ─── */
+body, html,
+.zc-page-container, .zc-page-body, .zc-page-content,
+.zc-page-wrapper, [class*="zc-page"],
+[class*="page-container"], [class*="page-body"] {
+    width: 100% !important; max-width: 100% !important;
+    padding-left: 0 !important; padding-right: 0 !important;
+    margin-left: 0 !important; margin-right: 0 !important;
+    box-sizing: border-box !important;
+}
+body, html { height: auto; overflow: auto; }
 
-#mi-status { position: fixed; bottom: 6px; right: 6px; background: #1a1a1a; color: #00ff00; padding: 3px 7px; border-radius: 4px; font-family: monospace; font-size: 10px; z-index: 99999; opacity: 0.75; pointer-events: none; }
+/* ─── OUTER WRAPPER ─── */
+.mc-wrap { width: 100%; max-width: 100%; margin: 0; padding: 0 16px; box-sizing: border-box; }
 
-#mi-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.25); backdrop-filter: blur(2px); z-index: 9998; pointer-events: all; }
-#mi-overlay.show { display: block; }
+/* ─── HEADER ─── */
+.mc-header {
+    background: linear-gradient(135deg, #5F94CE 0%, #5F94CE 100%);
+    color: white; padding: 12px 20px; border-radius: 10px 10px 0 0;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1px; box-sizing: border-box; width: 100%;
+}
+.mc-header-left h1 { font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: -0.3px; margin: 0; padding: 0; }
+.mc-header-left .mc-desc { font-size: 14px; opacity: 0.85; margin-top: 3px; }
+.mc-header-right { text-align: right; }
+.mc-header-right .mc-date { font-size: 14px; opacity: 0.85; }
+.mc-header-right .mc-logo { font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; opacity: 0.35; margin-top: 2px; }
 
-#mi-modal { background: #fff; border-radius: 14px; width: 480px; max-width: 96vw; max-height: 85vh; box-shadow: 0 24px 64px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; pointer-events: all; animation: miPopIn 0.22s cubic-bezier(0.34,1.56,0.64,1); position: fixed; top: 60px; right: 12px; }
-@keyframes miPopIn { from { transform: scale(0.9) translateY(12px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+/* ─── TOTALS BAR ─── */
+.mc-totals {
+    display: flex; gap: 1px; background: #E1E4EA;
+    border-radius: 0 0 10px 10px; overflow: hidden;
+    margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    width: 100%; box-sizing: border-box;
+}
+.mc-tot { background: #FFFFFF; padding: 8px 0; flex: 1; text-align: center; min-width: 0; box-sizing: border-box; }
+.mc-tot:first-child { border-radius: 0 0 0 10px; }
+.mc-tot:last-child  { border-radius: 0 0 10px 0; }
+.mc-tot.hl { background: #deeaf7; }
+.mc-tot-label { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #9BA3B0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
+.mc-tot-val { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; color: #1A1D23; margin-top: 2px; }
+.mc-tot.hl .mc-tot-val { color: #5F94CE; }
 
-#mi-modal-header { background: #3a3a3a; color: white; padding: 14px 18px; display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0; }
-#mi-header-info { flex: 1; min-width: 0; }
-#mi-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.65; }
-#mi-panel-subtitle { font-size: 15px; font-weight: 700; margin-top: 3px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#mi-close { background: rgba(255,255,255,0.15); border: none; color: white; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 14px; line-height: 26px; text-align: center; flex-shrink: 0; margin-left: 12px; margin-top: 2px; }
-#mi-close:hover { background: rgba(255,255,255,0.3); }
+/* ─── FORM EMBED ─── */
+.formembed { min-height: unset; height: auto !important; width: 100% !important; }
 
-#mi-tabs { display: flex; border-bottom: 1px solid #e4e7ec; flex-shrink: 0; }
-.mi-tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 12px; font-weight: 600; color: #888; border-bottom: 2px solid transparent; transition: all 0.15s; pointer-events: all; }
-.mi-tab.active { color: #3a3a3a; border-bottom-color: #3a3a3a; }
+/* ─── TABS ─── */
+.zc-Tabs-group label.choice-label-text, .zc-Tabs-group label { font-weight: normal !important; }
+.zc-Tabs-group input[type="radio"]:checked ~ label,
+.zc-Tabs-group input[type="radio"]:checked + label,
+.zc-Tabs-group input[type="radio"]:checked ~ label.choice-label-text,
+.zc-Tabs-group input[type="radio"]:checked + label.choice-label-text,
+.zc-Tabs-group input[type="radio"]:checked ~ span,
+.zc-Tabs-group input[type="radio"]:checked + span,
+.zc-tab-selected label, .zc-tab-selected span, .zc-tab-selected { color: #fff !important; font-weight: normal !important; }
+.zc-Tabs-group label.choice-label-text:hover, .zc-Tabs-group label:hover { color: #fff !important; }
 
-#mi-body { flex: 1; overflow-y: auto; padding: 16px; }
-
-.mi-section { margin-bottom: 16px; }
-.mi-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #9BA3B0; margin-bottom: 8px; }
-.mi-price-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
-.mi-price-box { background: #f9fafb; border-radius: 8px; padding: 10px 12px; border: 1px solid #f0f0f0; }
-.mi-price-box.hl  { background: #eff6ff; border-color: #93c5fd; }
-.mi-price-box.grn { background: #f0fdf4; border-color: #6ee7b7; }
-.mi-price-box.red { background: #fef2f2; border-color: #fca5a5; }
-.mi-price-box.amb { background: #f5f3ff; border-color: #c4b5fd; }
-.mi-price-box .lbl { font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
-.mi-price-box .val { font-size: 18px; font-weight: 700; color: #1a1a1a; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
-.mi-price-box.hl  .val { color: #3B82F6; }
-.mi-price-box.amb .val { color: #8B5CF6; }
-.mi-price-box.grn .val { color: #10B981; }
-.mi-price-box.red .val { color: #EF4444; }
-.mi-total-quotes { font-size: 11px; color: #aaa; margin-top: 8px; }
-.mi-trend-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
-.mi-trend-up { background: #fef2f2; color: #EF4444; }
-.mi-trend-down { background: #f0fdf4; color: #10B981; }
-.mi-trend-flat { background: #f0f9ff; color: #3B82F6; }
-.mi-trend-insufficient { background: #f9fafb; color: #9ca3af; }
-.mi-table { width: 100%; border-collapse: collapse; }
-.mi-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #999; font-weight: 600; padding: 4px 0 6px; border-bottom: 1px solid #f0f0f0; text-align: left; }
-.mi-table td { padding: 6px 0; border-bottom: 1px solid #f9f9f9; font-size: 12px; color: #2d2d2d; vertical-align: middle; }
-.mi-table tr:last-child td { border-bottom: none; }
-.mi-bar-wrap { background: #f0f0f0; border-radius: 4px; height: 5px; width: 60px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 6px; }
-.mi-bar-fill { height: 100%; border-radius: 4px; background: #3a3a3a; }
-.mi-badge { display: inline-block; background: #f0f0f0; color: #555; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
-.mi-loading { text-align: center; color: #aaa; padding: 40px 0; font-size: 13px; }
-.mi-error { color: #EF4444; font-size: 12px; padding: 12px; background: #fef2f2; border-radius: 6px; }
-.mi-no-data { text-align: center; padding: 32px 16px; color: #9ca3af; }
-.mi-no-data-icon { font-size: 32px; margin-bottom: 8px; }
-.mi-no-data-text { font-size: 13px; font-weight: 600; }
-.mi-no-data-sub { font-size: 11px; margin-top: 4px; }
+/* ─── RESPONSIVE ─── */
+@media only screen and (max-width: 1024px) { .mc-totals { flex-wrap: wrap; } .mc-tot { min-width: calc(25% - 1px); } }
+@media only screen and (max-width: 768px) { .mc-wrap { padding: 0 8px; } .mc-header { flex-direction: column; align-items: flex-start; gap: 6px; } .mc-header-right { text-align: left; } .mc-tot { min-width: calc(25% - 1px); } .mc-tot-label { font-size: 8px; } .mc-tot-val { font-size: 11px; } }
+@media only screen and (max-width: 600px) { .mc-wrap { padding: 0 4px; } .mc-tot { min-width: calc(50% - 1px); } }
 </style>
-</head>
-<body>
 
-<div id="mi-status"></div>
-
-<div id="mi-overlay" onclick="miOverlayClick(event)">
-    <div id="mi-modal">
-        <div id="mi-modal-header">
-            <div id="mi-header-info">
-                <div id="mi-eyebrow">Material Intelligence</div>
-                <div id="mi-panel-subtitle"></div>
-            </div>
-            <button id="mi-close" onclick="miClose()">✕</button>
+<div class="mc-wrap">
+    <div class="mc-header">
+        <div class="mc-header-left">
+            <h1>QUOTE PROJECT (RFQ from Client)</h1>
+            <div class="mc-desc"><%=projDesc%></div>
         </div>
-        <div id="mi-tabs">
-            <div class="mi-tab active" id="mi-tab-my" onclick="miSwitchTab('my')">My Quotes</div>
-            <div class="mi-tab" id="mi-tab-industry" onclick="miSwitchTab('industry')">Industry</div>
+        <div class="mc-header-right">
+            <div class="mc-date"><%=projDate%></div>
+            <div class="mc-logo">✦ MATERIAL COMPASS</div>
         </div>
-        <div id="mi-body"><div class="mi-loading">Loading...</div></div>
+    </div>
+    <div class="mc-totals">
+        <div class="mc-tot"><div class="mc-tot-label">Project Wt</div><div class="mc-tot-val"><%=input.projWt%></div></div>
+        <div class="mc-tot"><div class="mc-tot-label">Order Wt</div><div class="mc-tot-val"><%=input.orderWt%></div></div>
+        <div class="mc-tot"><div class="mc-tot-label">Total Mat Amt</div><div class="mc-tot-val">$<%=input.totalMatAmt%></div></div>
+        <div class="mc-tot"><div class="mc-tot-label">Labor Amt</div><div class="mc-tot-val">$<%=input.totalLaborAmt%></div></div>
+        <div class="mc-tot"><div class="mc-tot-label">Labor Hrs</div><div class="mc-tot-val"><%=input.totalLaborHrs%></div></div>
+        <div class="mc-tot"><div class="mc-tot-label">Outsource</div><div class="mc-tot-val">$<%=input.outsourceTotal%></div></div>
+        <div class="mc-tot"><div class="mc-tot-label">Mark Up</div><div class="mc-tot-val">$<%=input.markupAmt%></div></div>
+        <div class="mc-tot hl"><div class="mc-tot-label">Project Total</div><div class="mc-tot-val">$<%=input.projectTotal%></div></div>
+    </div>
+    <div class='formembed' elName='zc-component'
+        formLinkName='MCP_Customer_Project_Form?recLinkID=<%=input.project_id%>&viewLinkName=All_Mcp_customer_Projects&Page_Name=Project_Dashboard&ID=<%=input.project_id%>&MFG_Client_Form=<%=input.client_id%>'
+        params='zc_Header=false&zc_Footer=false&zc_InpClr=rgb(255,255,255)&zc_InpFieldFontClr=rgb(0,0,0)&zc_InpFieldFontSize=12px'
+        style='height:auto; width:100%'>Loading View...
     </div>
 </div>
-
-<script>
-var miCache = {};
-var miCurrentParams = null;
-var miCurrentTab = 'my';
-var miLastTrigger = '';
-var miProjectId = null;
-var miManufacturerId = null;
-var miFirstPoll = true;
-
-function miSetStatus(msg) { var el = document.getElementById('mi-status'); if (el) el.textContent = msg; }
-
-function miOpen() {
-    document.body.style.pointerEvents = 'all';
-    document.getElementById('mi-overlay').classList.add('show');
-    try { ZOHO.CREATOR.UI.resize({ width: "100%", height: "100%" }); } catch(e) {}
-}
-function miClose() {
-    document.getElementById('mi-overlay').classList.remove('show');
-    document.body.style.pointerEvents = 'none';
-    try { ZOHO.CREATOR.UI.resize({ width: "1px", height: "1px" }); } catch(e) {}
-}
-function miOverlayClick(e) { if (e.target === document.getElementById('mi-overlay')) miClose(); }
-
-function miSwitchTab(tab) {
-    miCurrentTab = tab;
-    document.getElementById('mi-tab-my').className = 'mi-tab' + (tab === 'my' ? ' active' : '');
-    document.getElementById('mi-tab-industry').className = 'mi-tab' + (tab === 'industry' ? ' active' : '');
-    if (miCurrentParams) miLoadData(tab, miCurrentParams);
-}
-
-function miFmt(val) { if (!val && val !== 0) return '—'; return '$' + parseFloat(val).toFixed(4); }
-
-function miTrendBadge(trend) {
-    var map = { 'up': ['mi-trend-up','▲','Trending Up'], 'down': ['mi-trend-down','▼','Trending Down'], 'flat': ['mi-trend-flat','→','Stable'], 'insufficient-data': ['mi-trend-insufficient','—','Insufficient Data'] };
-    var t = map[trend] || map['insufficient-data'];
-    return '<span class="mi-trend-badge ' + t[0] + '"><span>' + t[1] + '</span> ' + t[2] + '</span>';
-}
-
-function miProcessRecords(records) {
-    if (!records || records.length === 0) return { total_quotes:0, last_paid:0, min_price:0, max_price:0, avg_price:0, trend:'insufficient-data', recent_avg:0, recent_count:0, supplier_summary:[], lead_time_summary:[] };
-    var total=0, min=null, max=null, lastPaid=0, supTotals={}, supCounts={}, supReqs={}, ltCounts={};
-    var cutoff=new Date(); cutoff.setDate(cutoff.getDate()-90);
-    var recentTotal=0, recentCount=0, first=true, validCount=0;
-    records.forEach(function(r) {
-        var price=parseFloat(r.Price_Per_Lb)||0;
-        if (price<=0) return;
-        validCount++;
-        var sup=r.Supplier_Name||'Unknown', lt=r.Lead_Time_Drop_Down||'', qd=r.Quote_Date?new Date(r.Quote_Date):null;
-        var reqs=r.Item_Requirements||'';
-        if (first) { lastPaid=price; first=false; }
-        if (min===null||price<min) min=price;
-        if (max===null||price>max) max=price;
-        total+=price;
-        if (!supTotals[sup]) { supTotals[sup]=0; supCounts[sup]=0; supReqs[sup]={}; }
-        supTotals[sup]+=price; supCounts[sup]++;
-        if (reqs && reqs !== 'null') {
-            var reqList = Array.isArray(reqs) ? reqs : reqs.toString().split(',');
-            reqList.forEach(function(req) { var r2=req.toString().trim(); if (r2) supReqs[sup][r2]=(supReqs[sup][r2]||0)+1; });
-        }
-        if (lt&&lt!=='null') ltCounts[lt]=(ltCounts[lt]||0)+1;
-        if (qd&&qd>=cutoff) { recentTotal+=price; recentCount++; }
-    });
-    if (validCount===0) return { total_quotes:0, last_paid:0, min_price:0, max_price:0, avg_price:0, trend:'insufficient-data', recent_avg:0, recent_count:0, supplier_summary:[], lead_time_summary:[] };
-    var avg=total/validCount, recentAvg=recentCount>0?recentTotal/recentCount:0, trend='insufficient-data';
-    if (recentAvg>0&&avg>0) trend=recentAvg>avg*1.02?'up':recentAvg<avg*0.98?'down':'flat';
-    return { total_quotes:validCount, last_paid:lastPaid, min_price:min||0, max_price:max||0, avg_price:avg, trend:trend, recent_avg:recentAvg, recent_count:recentCount,
-        supplier_summary:Object.keys(supTotals).map(function(n){ return {supplier:n, avg_price:supTotals[n]/supCounts[n], quote_count:supCounts[n], item_requirements:Object.keys(supReqs[n])}; }),
-        lead_time_summary:Object.keys(ltCounts).map(function(lt){ return {lead_time:lt, count:ltCounts[lt]}; }) };
-}
-
-function miRender(data) {
-    if (data.total_quotes===0) {
-        document.getElementById('mi-body').innerHTML='<div class="mi-no-data"><div class="mi-no-data-icon">📊</div><div class="mi-no-data-text">No quote history found</div><div class="mi-no-data-sub">No previous quotes on record for this material</div></div>';
-        return;
-    }
-    var html='<div class="mi-section"><div class="mi-section-label">Pricing</div><div class="mi-price-grid">';
-    html+='<div class="mi-price-box hl"><div class="lbl">Last Paid</div><div class="val">'+miFmt(data.last_paid)+'</div></div>';
-    html+='<div class="mi-price-box amb"><div class="lbl">Avg Price</div><div class="val">'+miFmt(data.avg_price)+'</div></div>';
-    html+='<div class="mi-price-box grn"><div class="lbl">Min Price</div><div class="val">'+miFmt(data.min_price)+'</div></div>';
-    html+='<div class="mi-price-box red"><div class="lbl">Max Price</div><div class="val">'+miFmt(data.max_price)+'</div></div>';
-    html+='</div><div class="mi-total-quotes">'+data.total_quotes+' total quotes</div></div>';
-    html+='<div class="mi-section"><div class="mi-section-label">90-Day Trend</div>'+miTrendBadge(data.trend);
-    if (data.recent_count>0) html+='<span style="font-size:11px;color:#aaa;margin-left:8px;">'+data.recent_count+' recent · avg '+miFmt(data.recent_avg)+'</span>';
-    html+='</div>';
-    if (data.supplier_summary&&data.supplier_summary.length>0) {
-        var maxAvg=Math.max.apply(null,data.supplier_summary.map(function(s){return s.avg_price;}));
-        html+='<div class="mi-section"><div class="mi-section-label">Suppliers</div><table class="mi-table"><thead><tr><th>Supplier</th><th>Avg/lb</th><th>Quotes</th></tr></thead><tbody>';
-        data.supplier_summary.forEach(function(s){
-            var pct=maxAvg>0?Math.round((s.avg_price/maxAvg)*100):0;
-            var reqBadges='';
-            if (s.item_requirements&&s.item_requirements.length>0) {
-                reqBadges='<div style="margin-top:3px;">';
-                s.item_requirements.forEach(function(req){ reqBadges+='<span style="display:inline-block;background:#ebebeb;color:#333;border-radius:3px;padding:1px 5px;font-size:10px;margin-right:3px;margin-top:2px;">'+req+'</span>'; });
-                reqBadges+='</div>';
-            }
-            html+='<tr><td>'+s.supplier+reqBadges+'</td><td>'+miFmt(s.avg_price)+'<span class="mi-bar-wrap"><span class="mi-bar-fill" style="width:'+pct+'%"></span></span></td><td><span class="mi-badge">'+s.quote_count+'</span></td></tr>';
-        });
-        html+='</tbody></table></div>';
-    }
-    if (data.lead_time_summary&&data.lead_time_summary.length>0) {
-        var maxLT=Math.max.apply(null,data.lead_time_summary.map(function(l){return l.count;}));
-        html+='<div class="mi-section"><div class="mi-section-label">Lead Times</div><table class="mi-table"><thead><tr><th>Lead Time</th><th>Frequency</th></tr></thead><tbody>';
-        data.lead_time_summary.forEach(function(l){ var pct=maxLT>0?Math.round((l.count/maxLT)*100):0; html+='<tr><td>'+l.lead_time+'</td><td><span class="mi-bar-wrap"><span class="mi-bar-fill" style="width:'+pct+'%"></span></span> <span style="color:#aaa;font-size:11px;">'+l.count+'</span></td></tr>'; });
-        html+='</tbody></table></div>';
-    }
-    document.getElementById('mi-body').innerHTML=html;
-
-    // Send rendered HTML to parent snippet panel
-    try {
-        window.parent.postMessage({
-            type: 'mi_data_ready',
-            html: html,
-            tab: miCurrentTab
-        }, '*');
-    } catch(e) {}
-}
-
-// ── THE KEY FIX: handle trigger opens the panel directly (no postMessage) ──
-function miHandleTrigger(triggerVal) {
-    try {
-        var sanitized = triggerVal.replace(/("(?:materialName|materialType|specification|material|formType)":\s*")((?:[^"\\]|\\.)*)(")/g, function(match, key, value, close) {
-            var fixed = value.replace(/"/g, '\\"');
-            return key + fixed + close;
-        });
-        var trigger;
-        try {
-            trigger = JSON.parse(sanitized);
-        } catch(e2) {
-            var fallback = triggerVal.replace(/"([^"{}:,\[\]]*)"([^"{}:,\[\]]*)"(?=\s*[,}])/g, '"$1in$2"');
-            trigger = JSON.parse(fallback);
-        }
-        if (trigger.type !== 'materialSelected') return;
-
-        miCurrentParams = {
-            materialType:   trigger.materialType,
-            specification:  trigger.specification,
-            material:       trigger.material,
-            formType:       trigger.formType,
-            manufacturerId: trigger.manufacturerId
-        };
-        miCache = {};
-
-        document.getElementById('mi-panel-subtitle').textContent = trigger.materialName || 'Material Intelligence';
-
-        miCurrentTab = 'my';
-        document.getElementById('mi-tab-my').className = 'mi-tab active';
-        document.getElementById('mi-tab-industry').className = 'mi-tab';
-
-        miOpen();
-        miLoadData('my', miCurrentParams);
-
-        // Notify parent page (snippet) that a material was selected
-        try {
-            window.parent.postMessage({
-                type: 'mi_material_selected',
-                materialName: trigger.materialName || '',
-                params: miCurrentParams
-            }, '*');
-        } catch(e) {}
-
-        miSetStatus('● Open: ' + (trigger.materialName || '').substring(0, 20));
-    } catch(e) {
-        miSetStatus('Parse err: ' + e.message);
-    }
-}
-
-function miLoadData(tab, p) {
-    var cacheKey = tab + '_' + p.material;
-    if (miCache[cacheKey]) { miRender(miCache[cacheKey]); return; }
-    document.getElementById('mi-body').innerHTML = '<div class="mi-loading">Loading...</div>';
-    var mt=p.materialType, sp=p.specification, ma=p.material, cu=p.manufacturerId;
-    var criteria = '(Material_Type == '+mt+' && Material_Form_Detail == '+sp+' && Material == '+ma+')';
-    if (tab === 'my' && cu) criteria = '(Material_Type == '+mt+' && Material_Form_Detail == '+sp+' && Material == '+ma+' && Customer_LU == '+cu+')';
-    ZOHO.CREATOR.API.getAllRecords({
-        appName: 'type-formsheet-2-18-21',
-        reportName: 'Material_Intelligence_Structural_RFQ_Sent',
-        criteria: criteria, page: 1, pageSize: 200
-    }).then(function(response) {
-        if (response && response.code === 3000) {
-            var data = miProcessRecords(response.data);
-            miCache[cacheKey] = data;
-            miRender(data);
-        } else if (response && response.code === 3100) {
-            miRender(miProcessRecords([]));
-        } else {
-            document.getElementById('mi-body').innerHTML = '<div class="mi-error">Query failed: ' + JSON.stringify(response) + '</div>';
-        }
-    }).catch(function(err) {
-        if (err && err.responseText && err.responseText.indexOf('3100') !== -1) {
-            miRender(miProcessRecords([]));
-        } else {
-            document.getElementById('mi-body').innerHTML = '<div class="mi-error">Error: ' + JSON.stringify(err) + '</div>';
-        }
-    });
-}
-
-function miPoll() {
-    var opts = {
-        appName: 'type-formsheet-2-18-21',
-        reportName: 'All_Mcp_customer_Projects',
-        page: 1,
-        pageSize: 1
-    };
-    if (miProjectId) {
-        opts.criteria = '(ID == ' + miProjectId + ')';
-    } else if (miManufacturerId) {
-        opts.criteria = '(MANUFACTURE == ' + miManufacturerId + ')';
-    }
-
-    ZOHO.CREATOR.API.getAllRecords(opts)
-    .then(function(response) {
-        if (response && response.code === 3000 && response.data && response.data.length > 0) {
-            var rec = response.data[0];
-            if (!miProjectId && rec.ID) miProjectId = rec.ID;
-            if (!miManufacturerId && rec.MANUFACTURE) miManufacturerId = rec.MANUFACTURE;
-            var triggerVal = rec.Intel_Trigger || '';
-            miSetStatus('● ' + new Date().toLocaleTimeString() + ' mfg:' + (miManufacturerId ? miManufacturerId.toString().substring(0,6) : 'none'));
-            if (miFirstPoll) {
-                miFirstPoll = false;
-                miLastTrigger = triggerVal;
-            } else if (triggerVal && triggerVal !== miLastTrigger && triggerVal.indexOf('materialSelected') !== -1) {
-                miLastTrigger = triggerVal;
-                miHandleTrigger(triggerVal);
-            }
-        } else {
-            miSetStatus('No data: ' + JSON.stringify(response).substring(0, 40));
-        }
-    }).catch(function(err) {
-        miSetStatus('Poll err: ' + JSON.stringify(err).substring(0, 30));
-    });
-}
-
-ZOHO.CREATOR.init().then(function() {
-    try { ZOHO.CREATOR.UI.resize({ width: "1px", height: "1px" }); } catch(e) {}
-
-    // Listen for tab switch requests from parent snippet
-    window.addEventListener('message', function(event) {
-        var d = event.data;
-        if (!d || typeof d !== 'object') return;
-        if (d.type === 'mi_switch_tab' && d.tab && miCurrentParams) {
-            miSwitchTab(d.tab);
-        }
-    });
-
-    try {
-        var qp = ZOHO.CREATOR.UTIL.getQueryParams();
-        if (qp && qp.project_id) miProjectId = qp.project_id;
-    } catch(e) {}
-
-    if (!miProjectId) {
-        try {
-            var pd = ZOHO.CREATOR.UTIL.getCurrentPageData ? ZOHO.CREATOR.UTIL.getCurrentPageData() : null;
-            if (pd && pd.ID) miProjectId = pd.ID;
-        } catch(e) {}
-    }
-
-    miSetStatus('SDK OK id:' + (miProjectId || 'none'));
-    miPoll();
-    setInterval(miPoll, 3000);
-}).catch(function(err) {
-    miSetStatus('SDK err: ' + JSON.stringify(err).substring(0, 30));
-});
-</script>
-</body>
-</html>
+<%
+}%>
