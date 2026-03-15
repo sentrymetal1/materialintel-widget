@@ -402,6 +402,14 @@ ZOHO.CREATOR.init().then(function() {
             if (miInlineMode) miSwitchTabInline(d.tab);
             else miSwitchTab(d.tab);
         }
+        // Handle direct trigger via postMessage (inline mode)
+        if (d.type === 'materialSelected' || (d.materialType && d.specification && d.material)) {
+            var payload = JSON.stringify(d);
+            if (payload !== miLastTrigger) {
+                miLastTrigger = payload;
+                miHandleTrigger(payload);
+            }
+        }
     });
 
     miSetStatus('SDK OK id:'+(miProjectId||'none')+' mode:'+(miInlineMode?'inline':'popup'));
