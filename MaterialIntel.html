@@ -63,7 +63,7 @@ body.inline-mode #mi-overlay { display: none !important; }
 .mi-price-box.red { background: #fef2f2; border-color: #fca5a5; }
 .mi-price-box.amb { background: #f5f3ff; border-color: #c4b5fd; }
 .mi-price-box .lbl { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
-.mi-price-box .val { font-size: 14px; font-weight: 700; color: #000000; font-family: 'JetBrains Mono', monospace; }
+.mi-price-box .val { font-size: 13px; font-weight: 700; color: #000000; font-family: 'JetBrains Mono', monospace; }
 .mi-total-quotes { font-size: 11px; color: #aaa; margin-top: 6px; }
 .mi-trend-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
 .mi-trend-up { background: #fef2f2; color: #EF4444; }
@@ -102,7 +102,6 @@ body.inline-mode #mi-overlay { display: none !important; }
   min-width: 180px;
   line-height: 1.7;
 }
-</style>
 </head>
 <body>
 
@@ -200,7 +199,7 @@ function miTrendBadge(trend) {
 /* ─── DATA PROCESSING ─── */
 function miProcessRecords(records) {
     if (!records || records.length === 0) return { total_quotes:0, last_paid:0, min_price:0, max_price:0, avg_price:0, trend:'insufficient-data', recent_avg:0, recent_count:0, supplier_summary:[], lead_time_summary:[] };
-    var total=0, min=null, max=null, lastPaid=0, supTotals={}, supCounts={}, supReqs={}, ltCounts={};
+    var total=0, min=null, max=null, lastPaid=0, supTotals={}, supCounts={}, supReqs={}, supLastDate={}, supLastPrice={}, ltCounts={};
     var cutoff=new Date(); cutoff.setDate(cutoff.getDate()-90);
     var recentTotal=0, recentCount=0, first=true, validCount=0;
     records.forEach(function(r) {
@@ -213,8 +212,9 @@ function miProcessRecords(records) {
         if (min===null||price<min) min=price;
         if (max===null||price>max) max=price;
         total+=price;
-        if (!supTotals[sup]) { supTotals[sup]=0; supCounts[sup]=0; supReqs[sup]={}; }
+        if (!supTotals[sup]) { supTotals[sup]=0; supCounts[sup]=0; supReqs[sup]={}; supLastDate[sup]=null; supLastPrice[sup]=0; }
         supTotals[sup]+=price; supCounts[sup]++;
+        if (!supLastDate[sup] || (qd && qd > supLastDate[sup])) { supLastDate[sup]=qd; supLastPrice[sup]=price; }
         if (reqs && reqs !== 'null') {
             var reqList = Array.isArray(reqs) ? reqs : reqs.toString().split(',');
             reqList.forEach(function(req) { var r2=req.toString().trim(); if (r2) supReqs[sup][r2]=(supReqs[sup][r2]||0)+1; });
@@ -226,7 +226,7 @@ function miProcessRecords(records) {
     var avg=total/validCount, recentAvg=recentCount>0?recentTotal/recentCount:0, trend='insufficient-data';
     if (recentAvg>0&&avg>0) trend=recentAvg>avg*1.02?'up':recentAvg<avg*0.98?'down':'flat';
     return { total_quotes:validCount, last_paid:lastPaid, min_price:min||0, max_price:max||0, avg_price:avg, trend:trend, recent_avg:recentAvg, recent_count:recentCount,
-        supplier_summary:Object.keys(supTotals).map(function(n){ return {supplier:n, avg_price:supTotals[n]/supCounts[n], quote_count:supCounts[n], item_requirements:Object.keys(supReqs[n])}; }),
+        supplier_summary:Object.keys(supTotals).map(function(n){ return {supplier:n, avg_price:supTotals[n]/supCounts[n], quote_count:supCounts[n], item_requirements:Object.keys(supReqs[n]), last_date:supLastDate[n], last_price:supLastPrice[n]}; }),
         lead_time_summary:Object.keys(ltCounts).map(function(lt){ return {lead_time:lt, count:ltCounts[lt]}; }) };
 }
 
@@ -251,13 +251,16 @@ function miRender(data, inline) {
         html+='<div class="mi-section"><div class="mi-section-label">Suppliers</div><table class="mi-table"><thead><tr><th>Supplier</th><th>Avg/lb</th><th>Quotes</th></tr></thead><tbody>';
         data.supplier_summary.forEach(function(s){
             var pct=maxAvg>0?Math.round((s.avg_price/maxAvg)*100):0;
+            var dateStr = s.last_date ? s.last_date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'No date';
+            var reqList = s.item_requirements && s.item_requirements.length>0 ? s.item_requirements.join(', ') : '—';
+            var tooltip = '📅 Last quote: '+dateStr+'&#10;💲 Last price: '+miFmt(s.last_price)+'&#10;📦 Requirements: '+reqList;
             var reqBadges='';
             if (s.item_requirements&&s.item_requirements.length>0) {
                 reqBadges='<div style="margin-top:3px;">';
                 s.item_requirements.forEach(function(req){ reqBadges+='<span style="display:inline-block;background:#ebebeb;color:#333;border-radius:3px;padding:1px 5px;font-size:10px;margin-right:3px;margin-top:2px;">'+req+'</span>'; });
                 reqBadges+='</div>';
             }
-            html+='<tr><td>'+s.supplier+reqBadges+'</td><td>'+miFmt(s.avg_price)+'<span class="mi-bar-wrap"><span class="mi-bar-fill" style="width:'+pct+'%"></span></span></td><td><span class="mi-badge">'+s.quote_count+'</span></td></tr>';
+            html+='<tr class="mi-sup-row"><td>'+s.supplier+reqBadges+'<div class="mi-sup-tooltip">📅 Last quote: '+dateStr+'<br>💲 Last price: '+miFmt(s.last_price)+'<br>📦 Items: '+reqList+'</div></td><td>'+miFmt(s.avg_price)+'<span class="mi-bar-wrap"><span class="mi-bar-fill" style="width:'+pct+'%"></span></span></td><td><span class="mi-badge">'+s.quote_count+'</span></td></tr>';
         });
         html+='</tbody></table></div>';
     }
