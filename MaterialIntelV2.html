@@ -154,7 +154,6 @@ var miCurrentTab = 'my';
 var miLastTrigger = '';
 var miProjectId = null;
 var miManufacturerId = null;
-var miFirstPoll = true;
 var miInlineMode = false;
 
 function miSetStatus(msg) { var el = document.getElementById('mi-status'); if (el) el.textContent = msg; }
@@ -366,10 +365,7 @@ function miPoll() {
             if (!miManufacturerId && rec.MANUFACTURE) miManufacturerId = rec.MANUFACTURE;
             var triggerVal = rec.Intel_Trigger || '';
             miSetStatus('● ' + new Date().toLocaleTimeString() + ' id:'+(miProjectId?miProjectId.toString().substring(0,8):'none'));
-            if (miFirstPoll) {
-                miFirstPoll = false;
-                miLastTrigger = triggerVal;
-            } else if (triggerVal && triggerVal !== miLastTrigger && triggerVal.indexOf('materialSelected') !== -1) {
+            if (triggerVal && triggerVal !== miLastTrigger && triggerVal.indexOf('materialSelected') !== -1) {
                 miLastTrigger = triggerVal;
                 miHandleTrigger(triggerVal);
             }
