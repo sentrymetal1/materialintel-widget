@@ -32,6 +32,11 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .tab{flex:1;padding:8px 4px;text-align:center;font-size:11px;font-weight:600;color:#888;cursor:pointer;border-bottom:2px solid transparent}
 .tab.on{color:var(--ink);border-bottom-color:var(--ink)}
 .body{padding:10px 10px 30px}
+.subtabs{display:flex;gap:4px;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:3px;margin-bottom:10px}
+.subtabs button{flex:1;font:inherit;font-size:11px;font-weight:600;color:var(--mut);background:none;border:0;border-radius:6px;padding:6px 4px;cursor:pointer}
+.subtabs button span{font-size:10px;font-weight:700;color:var(--faint);margin-left:3px}
+.subtabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.subtabs button.on span{color:var(--blue)}
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
 .kpi{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
 .kpi .l{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
@@ -85,7 +90,7 @@ body.wide .hdr{padding:14px 20px} body.wide .tabs{top:58px}
 <div class="foot" id="foot"></div>
 
 <script>
-var BUILD = 'mi-v3 · 2026-10-01';
+var BUILD = 'mi-v3.1 · 2026-10-01';
 var API = 'https://material-compass-nesting-app-production.up.railway.app';
 var PID = '', DATA = null, VIEW = 'project', DETAIL = null, lastTrigger = '';
 var qs = new URLSearchParams(location.search);
@@ -168,17 +173,38 @@ function fitRow(f){
       : '<span>not quoted before</span>') + '</div></div>';
 }
 
+// Second row of tabs under "This project": Structural | Fittings, remembered for the session.
+var SUB = (function(){ try { return sessionStorage.getItem('mi_sub') || 'structural'; } catch (e) { return 'structural'; } })();
+window.setSub = function(s){ SUB = s; try { sessionStorage.setItem('mi_sub', s); } catch (e) {} render(); };
+
+function fitKpis(){
+  var ft = DATA.fittings || [];
+  var quoted = ft.filter(function(f){ return f.quoted; }).length;
+  var w = ft.reduce(function(s, f){ return s + (f.weight || 0); }, 0);
+  var last = ft.map(function(f){ return f.last_quoted; }).filter(Boolean).sort().pop();
+  return '<div class="kpis">'
+    + '<div class="kpi"><div class="l">Fitting types</div><div class="v">' + ft.length + '</div><div class="s">' + (DATA.summary.fitting_qty || 0) + ' pieces</div></div>'
+    + '<div class="kpi"><div class="l">Weight</div><div class="v mono">' + lb(w) + '</div><div class="s">all fittings</div></div>'
+    + '<div class="kpi"><div class="l">Quoted before</div><div class="v">' + quoted + ' / ' + ft.length + '</div><div class="s">' + (ft.length - quoted) + ' never quoted</div></div>'
+    + '<div class="kpi"><div class="l">Last quoted</div><div class="v">' + dt(last) + '</div><div class="s">any fitting on this job</div></div>'
+    + '</div>';
+}
+
 function projectHtml(){
   var st = DATA.structural || [], ft = DATA.fittings || [];
-  var html = alertsHtml() + kpis();
-  html += '<div class="cols"><div>';
+  var html = '<div class="subtabs">'
+    + '<button class="' + (SUB === 'structural' ? 'on' : '') + '" onclick="setSub(\'structural\')">Structural <span>' + st.length + '</span></button>'
+    + '<button class="' + (SUB === 'fittings' ? 'on' : '') + '" onclick="setSub(\'fittings\')">Fittings <span>' + ft.length + '</span></button></div>';
+  if (SUB === 'fittings') {
+    html += fitKpis();
+    if (DATA.notes && DATA.notes.fittings_price && ft.length) html += '<div class="note">' + esc(DATA.notes.fittings_price) + '</div>';
+    html += '<div class="sec"><span>Fittings</span><span>most pieces first</span></div>';
+    html += ft.length ? ft.map(fitRow).join('') : '<div class="note">No fittings on this project.</div>';
+    return html;
+  }
+  html += alertsHtml() + kpis();
   html += '<div class="sec"><span>Structural & plate</span><span>by $ impact</span></div>';
   html += st.length ? st.map(structRow).join('') : '<div class="note">No BOM material on this project yet.</div>';
-  html += '</div><div>';
-  html += '<div class="sec"><span>Fittings</span><span>' + ft.length + ' types · ' + (DATA.summary.fitting_qty || 0) + ' pcs</span></div>';
-  if (DATA.notes && DATA.notes.fittings_price && ft.length) html += '<div class="note">' + esc(DATA.notes.fittings_price) + '</div>';
-  html += ft.length ? ft.map(fitRow).join('') : '<div class="note">No fittings on this project.</div>';
-  html += '</div></div>';
   html += '<div class="note">Prices are $/lb from your shop\'s supplier quotes. "similar" means no quote for that exact size — priced from the same form, type and spec. Tap a material for its quote history.</div>';
   return html;
 }
@@ -244,7 +270,7 @@ function detailHtml(s){
   return html;
 }
 
-window.openDetail = function(i){ DETAIL = DATA.structural[i]; render(); window.scrollTo(0, 0); };
+window.openDetail = function(i){ DETAIL = DATA.structural[i]; SUB = 'structural'; render(); window.scrollTo(0, 0); };
 window.closeDetail = function(){ DETAIL = null; render(); };
 document.querySelectorAll('.tab').forEach(function(t){ t.onclick = function(){ VIEW = t.getAttribute('data-v'); DETAIL = null; render(); }; });
 document.getElementById('refreshBtn').onclick = load;
