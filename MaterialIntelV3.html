@@ -75,26 +75,28 @@ tr.this td{background:#f0f9ff}
 .state{color:var(--faint);text-align:center;padding:36px 12px;font-size:12px;line-height:1.5}
 .err{color:var(--up);background:var(--upbg);border-radius:7px;padding:9px;font-size:11px;margin:10px}
 .foot{position:fixed;bottom:4px;right:6px;font-size:9px;color:#c4c9d0}
-/* Wide (Expand) layout */
-body.wide .body{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
-body.wide .kpis{grid-template-columns:repeat(4,1fr)}
-body.wide .cols{display:grid;grid-template-columns:3fr 2fr;gap:18px}
-body.wide .hdr{padding:14px 20px} body.wide .tabs{top:58px}
+/* The layout follows the window: compact in the ~300px panel, roomier as the pop-out grows. */
+@media (min-width:560px){
+  .kpis{grid-template-columns:repeat(4,1fr)}
+  .body{padding:14px 16px 40px}
+  .hdr{padding:13px 16px}
+  .tabs{top:56px}
+}
+@media (min-width:900px){ .body{max-width:1100px;margin:0 auto} }
 </style>
 </head>
 <body>
-<div class="hdr"><div class="eb"><span>Material Intelligence</span><span><button id="refreshBtn" title="Reload from the project">↻</button><button id="expandBtn" title="Open a wider view">Expand ⤢</button></span></div>
+<div class="hdr"><div class="eb"><span>Material Intelligence</span><span><button id="refreshBtn" title="Reload from the project">↻</button><button id="expandBtn" title="Open in its own window you can move beside the quote and resize — it remembers where you put it">Pop out ⧉</button></span></div>
   <div class="ttl" id="ttl">Loading project…</div></div>
 <div class="tabs"><div class="tab on" data-v="project">This project</div><div class="tab" data-v="industry">Industry</div></div>
 <div class="body" id="body"><div class="state">Loading material intelligence…</div></div>
 <div class="foot" id="foot"></div>
 
 <script>
-var BUILD = 'mi-v3.1 · 2026-10-01';
+var BUILD = 'mi-v3.2 · 2026-10-01';
 var API = 'https://material-compass-nesting-app-production.up.railway.app';
 var PID = '', DATA = null, VIEW = 'project', DETAIL = null, lastTrigger = '';
 var qs = new URLSearchParams(location.search);
-if (qs.get('wide') === '1') document.body.classList.add('wide');
 document.getElementById('foot').textContent = BUILD;
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -274,10 +276,30 @@ window.openDetail = function(i){ DETAIL = DATA.structural[i]; SUB = 'structural'
 window.closeDetail = function(){ DETAIL = null; render(); };
 document.querySelectorAll('.tab').forEach(function(t){ t.onclick = function(){ VIEW = t.getAttribute('data-v'); DETAIL = null; render(); }; });
 document.getElementById('refreshBtn').onclick = load;
+// ---- Pop out: its own window, beside the quote ------------------------------------------------
+// A widget cannot draw outside its panel, so a floating panel over the Zoho page is not possible.
+// A real window is: the estimator drags it next to the quote or onto a second screen and sizes it.
+// Size and position are remembered (same origin in the panel and the window, so the panel reads
+// what the window saved). One named window — pressing Pop out again re-uses it.
+var POP_KEY = 'mi_popout_geom';
+function popGeom(){
+  var g = null; try { g = JSON.parse(localStorage.getItem(POP_KEY) || 'null'); } catch (e) {}
+  var w = (g && g.w) || 460, h = (g && g.h) || Math.min(900, (screen.availHeight || 900) - 60);
+  var left = (g && g.x != null) ? g.x : Math.max(0, (screen.availWidth || 1400) - w - 20), top = (g && g.y != null) ? g.y : 40;
+  return 'popup=yes,width=' + w + ',height=' + h + ',left=' + left + ',top=' + top + ',resizable=yes,scrollbars=yes';
+}
+var popWin = null;
 document.getElementById('expandBtn').onclick = function(){
-  window.open(location.origin + location.pathname + '?project_id=' + encodeURIComponent(PID) + '&wide=1', '_blank');
+  var win = window.open(location.origin + location.pathname + '?project_id=' + encodeURIComponent(PID) + '&popout=1', 'mi_popout', popGeom());
+  if (win) { popWin = win; try { win.focus(); } catch (e) {} }
+  else { window.open(location.origin + location.pathname + '?project_id=' + encodeURIComponent(PID) + '&popout=1', '_blank'); }   // pop-up blocked: a tab still works
 };
-if (document.body.classList.contains('wide')) document.getElementById('expandBtn').style.display = 'none';
+if (qs.get('popout') === '1' || qs.get('wide') === '1') {
+  document.getElementById('expandBtn').style.display = 'none';
+  // Remember where the estimator left it: on resize, and every few seconds for moves (there is no move event).
+  var saveGeom = function(){ try { localStorage.setItem(POP_KEY, JSON.stringify({ w: window.outerWidth, h: window.outerHeight, x: window.screenX, y: window.screenY })); } catch (e) {} };
+  window.addEventListener('resize', saveGeom); window.addEventListener('beforeunload', saveGeom); setInterval(saveGeom, 4000);
+}
 
 // ---- "View Intel" on a Purchase Material row still works: it opens that material ------------
 // The old widget polled every 3 s. This checks every 20 s, and only while the panel is visible.
@@ -292,8 +314,16 @@ function pollTrigger(){
       var t; try { t = JSON.parse(v); } catch (e) { return; }
       var i = (DATA.structural || []).findIndex(function(s){ return t.material && s.key === String(t.material); });
       if (i > -1) { VIEW = 'project'; openDetail(i); }
+      // The pop-out runs outside Zoho and cannot see the tick itself — hand it on.
+      if (t.material && popWin && !popWin.closed) { try { popWin.postMessage({ type: 'mi_open', key: String(t.material) }, location.origin); } catch (e) {} }
     }).catch(function(){});
 }
+// In the pop-out: open the material the panel says was ticked.
+window.addEventListener('message', function(ev){
+  if (ev.origin !== location.origin || !ev.data || ev.data.type !== 'mi_open' || !DATA) return;
+  var i = (DATA.structural || []).findIndex(function(s){ return s.key === ev.data.key; });
+  if (i > -1) { VIEW = 'project'; openDetail(i); try { window.focus(); } catch (e) {} }
+});
 
 // ---- start: project id from the widget params (Zoho) or the URL (standalone / Expand) --------
 function start(id){ PID = String(id || '').trim(); load(); }
